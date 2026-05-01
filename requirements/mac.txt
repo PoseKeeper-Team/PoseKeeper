@@ -1,0 +1,21 @@
+# macOS Apple Silicon (M1/M2/M3) — uses MPS backend.
+# Install with:  pip install -r requirements/mac.txt
+#
+# Notes:
+# - The default torch wheel on macOS already bundles MPS support; no extra index needed.
+# - mediapipe ships official ARM64 wheels for Python 3.10 since 0.10.x. If
+#   `pip install mediapipe` fails on Apple Silicon, setup.py will retry with
+#   `mediapipe-silicon` as a fallback.
+
+numpy>=1.24,<2.0
+opencv-python>=4.8
+mediapipe>=0.10,<0.11
+matplotlib>=3.7
+pillow>=10.0
+tqdm>=4.65
+
+pystray>=0.19
+plyer>=2.1
+
+torch>=2.1
+torchvision>=0.16

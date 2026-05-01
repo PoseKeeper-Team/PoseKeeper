@@ -1,0 +1,13 @@
+# Common runtime dependencies (shared across all environments).
+# PyTorch is intentionally NOT here — it differs per backend (CUDA/CPU/MPS).
+
+numpy>=1.24,<2.0
+opencv-python>=4.8
+mediapipe>=0.10,<0.11
+matplotlib>=3.7
+pillow>=10.0
+tqdm>=4.65
+
+# Tray app stack (skip on Colab via colab.txt)
+pystray>=0.19
+plyer>=2.1

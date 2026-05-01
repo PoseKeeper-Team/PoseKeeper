@@ -1,0 +1,8 @@
+# NVIDIA GPU (CUDA 12.1) — Windows / Linux with NVIDIA driver.
+# Install with:  pip install -r requirements/cuda.txt
+
+-r base.txt
+
+--extra-index-url https://download.pytorch.org/whl/cu121
+torch>=2.1
+torchvision>=0.16

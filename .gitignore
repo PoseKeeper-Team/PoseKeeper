@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+*.so
+
+# venv
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Project artifacts (do not commit raw data or trained weights)
+data/raw/
+data/processed/
+data/*.db
+data/*.db-journal
+data/*.db-wal
+data/*.db-shm
+weights/*.pth
+weights/*.pt
+
+# Notebook checkpoints
+.ipynb_checkpoints/
+
+# Logs
+*.log
+logs/

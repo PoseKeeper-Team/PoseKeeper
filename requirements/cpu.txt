@@ -1,0 +1,8 @@
+# CPU-only — Windows / Linux without GPU.
+# Install with:  pip install -r requirements/cpu.txt
+
+-r base.txt
+
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch>=2.1
+torchvision>=0.16

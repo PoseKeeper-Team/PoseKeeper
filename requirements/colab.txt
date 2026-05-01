@@ -1,0 +1,18 @@
+# Google Colab (training only — no webcam, no tray app).
+# Install in a Colab cell with:
+#     !pip install -r requirements/colab.txt
+#
+# torch / numpy / opencv / matplotlib are usually preinstalled on Colab,
+# but pinning them keeps re-runs reproducible.
+
+numpy>=1.24,<2.0
+opencv-python>=4.8
+mediapipe>=0.10,<0.11
+matplotlib>=3.7
+pillow>=10.0
+tqdm>=4.65
+
+torch>=2.1
+torchvision>=0.16
+
+# pystray / plyer are intentionally omitted — Colab has no system tray.
