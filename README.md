@@ -4,6 +4,11 @@
 
 세종대 컴공 7조 딥러닝 팀 프로젝트 (2026-1학기).
 
+
+
+
+afs
+
 ## 빠른 시작
 
 ```bash
@@ -19,11 +24,11 @@ python main.py
 
 ## 환경별 수동 설치
 
-| 환경 | 명령 |
-| --- | --- |
-| NVIDIA GPU (CUDA) | `pip install -r requirements/cuda.txt` |
-| CPU only | `pip install -r requirements/cpu.txt` |
-| Mac Apple Silicon | `pip install -r requirements/mac.txt` |
+| 환경                | 명령                                       |
+| ------------------- | ------------------------------------------ |
+| NVIDIA GPU (CUDA)   | `pip install -r requirements/cuda.txt`   |
+| CPU only            | `pip install -r requirements/cpu.txt`    |
+| Mac Apple Silicon   | `pip install -r requirements/mac.txt`    |
 | Google Colab (학습) | `!pip install -r requirements/colab.txt` |
 
 `python setup.py --env <cuda|cpu|mac|colab>` 로 강제 지정도 가능.
@@ -72,9 +77,9 @@ PoseKeeper/
 
 ## 팀 / 모듈 책임
 
-| 이름 | 모듈 |
-| --- | --- |
-| 김찬영 (팀장) | `models/mlp.py`, `train/train_mlp.py`, `app/tray.py`, `app/alert.py` |
-| 강지윤 | `models/lstm.py`, `train/train_lstm.py`, `utils/mediapipe_utils.py` (얼굴 부분) |
-| 김민준 | `app/dashboard.py`, `utils/db.py`, 시각화 |
-| 김병훈 | `data/collect.py`, `data/preprocess.py`, `models/autoencoder.py`, `train/train_ae.py` |
+| 이름          | 모듈                                                                                          |
+| ------------- | --------------------------------------------------------------------------------------------- |
+| 김찬영 (팀장) | `models/mlp.py`, `train/train_mlp.py`, `app/tray.py`, `app/alert.py`                  |
+| 강지윤        | `models/lstm.py`, `train/train_lstm.py`, `utils/mediapipe_utils.py` (얼굴 부분)         |
+| 김민준        | `app/dashboard.py`, `utils/db.py`, 시각화                                                 |
+| 김병훈        | `data/collect.py`, `data/preprocess.py`, `models/autoencoder.py`, `train/train_ae.py` |
