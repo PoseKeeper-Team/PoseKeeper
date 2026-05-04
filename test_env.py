@@ -26,17 +26,17 @@ SKIPPED: list[str] = []
 
 def ok(name: str, detail: str = "") -> None:
     PASSED.append(name)
-    print(f"[OK]   {name}{f' — {detail}' if detail else ''}")
+    print(f"[OK]   {name}{f' - {detail}' if detail else ''}")
 
 
 def fail(name: str, err: BaseException) -> None:
     FAILED.append(name)
-    print(f"[FAIL] {name} — {type(err).__name__}: {err}")
+    print(f"[FAIL] {name} - {type(err).__name__}: {err}")
 
 
 def skip(name: str, reason: str) -> None:
     SKIPPED.append(name)
-    print(f"[SKIP] {name} — {reason}")
+    print(f"[SKIP] {name} - {reason}")
 
 
 def check_python() -> None:
@@ -76,12 +76,13 @@ def check_mediapipe_inference() -> None:
     """Actually instantiate Pose + FaceMesh and run them on a dummy frame."""
     try:
         import numpy as np
-        import mediapipe as mp
+        import mediapipe.python.solutions.pose as mp_pose
+        import mediapipe.python.solutions.face_mesh as mp_face
 
         dummy = np.zeros((240, 320, 3), dtype=np.uint8)
-        with mp.solutions.pose.Pose(model_complexity=0) as pose:
+        with mp_pose.Pose(model_complexity=0) as pose:
             pose.process(dummy)
-        with mp.solutions.face_mesh.FaceMesh(refine_landmarks=False) as fm:
+        with mp_face.FaceMesh(refine_landmarks=False) as fm:
             fm.process(dummy)
         ok("MediaPipe Pose + FaceMesh", "instantiated and ran on dummy frame")
     except Exception as e:  # noqa: BLE001
