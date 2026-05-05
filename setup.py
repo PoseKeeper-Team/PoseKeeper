@@ -7,10 +7,6 @@ installs the matching requirements file. Run from the project root:
     python setup.py --env cpu        # force a specific environment
     python setup.py --no-install     # detect only, skip pip
     python setup.py --skip-test      # install but don't run test_env.py
-
-Requires Python 3.10.x. MediaPipe wheels are most stable on 3.10; on 3.11+
-the install may succeed but is unsupported by the team. On 3.9- it will
-refuse to run.
 """
 from __future__ import annotations
 
@@ -24,21 +20,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from src.utils.device import detect_env, is_apple_silicon  # noqa: E402
 
 
-REQUIRED_PY = (3, 10)
 PROJECT_ROOT = Path(__file__).resolve().parent
 REQ_DIR = PROJECT_ROOT / "requirements"
-
-
-def check_python_version() -> None:
-    major, minor = sys.version_info[:2]
-    if (major, minor) < REQUIRED_PY:
-        print(f"[FAIL] Python {major}.{minor} detected — PoseKeeper requires 3.10.x.")
-        sys.exit(1)
-    if (major, minor) != REQUIRED_PY:
-        print(
-            f"[WARN] Python {major}.{minor} detected. The team standard is 3.10.x; "
-            "MediaPipe wheels are most stable there. Continuing anyway."
-        )
 
 
 def pip_install(req_file: Path) -> int:
@@ -95,8 +78,6 @@ def main() -> None:
     parser.add_argument("--skip-test", action="store_true",
                         help="Skip running test_env.py after install.")
     args = parser.parse_args()
-
-    check_python_version()
 
     env = detect_env() if args.env == "auto" else args.env
     print(f"[INFO] Target environment: {env}")

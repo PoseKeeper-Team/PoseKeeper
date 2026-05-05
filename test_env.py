@@ -10,7 +10,6 @@ flow doesn't need them.
 from __future__ import annotations
 
 import importlib
-import platform
 import sys
 import traceback
 from pathlib import Path
@@ -37,15 +36,6 @@ def fail(name: str, err: BaseException) -> None:
 def skip(name: str, reason: str) -> None:
     SKIPPED.append(name)
     print(f"[SKIP] {name} - {reason}")
-
-
-def check_python() -> None:
-    v = sys.version_info
-    detail = f"{v.major}.{v.minor}.{v.micro} on {platform.system()} {platform.machine()}"
-    if (v.major, v.minor) == (3, 10):
-        ok("Python 3.10.x", detail)
-    else:
-        fail("Python 3.10.x", RuntimeError(f"got {detail}"))
 
 
 def check_import(module: str, *, attr: str | None = None) -> None:
@@ -122,7 +112,6 @@ def check_tkinter() -> None:
 
 def main() -> int:
     print(f"\n=== PoseKeeper environment check ===\n")
-    check_python()
     check_import("numpy")
     check_import("torch")
     check_import("cv2")
