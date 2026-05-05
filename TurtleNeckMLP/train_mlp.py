@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, TensorDataset
-from src.models.mlp_model import TurtleNeckMLP
+from TurtleNeckMLP.mlp_model import TurtleNeckMLP
 
 def train_model(train_x, train_y, val_x, val_y, config):
     # 1. 데이터셋 준비 (Numpy -> Tensor)

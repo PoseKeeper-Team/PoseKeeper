@@ -1,0 +1,36 @@
+import sys
+import os
+# 상대 임포트 에러 방지를 위한 경로 추가
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from collect import collect_pose_data
+from train import train_model
+import os
+
+if __name__ == "__main__":
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    DATA_PATH = os.path.join(BASE_DIR, "data.csv")
+    MODEL_PATH = os.path.join(BASE_DIR, "turtle_neck_mlp.pth")
+
+    while True:
+        print("\n--- Turtle Neck MLP Module ---")
+        print("1. 정상 자세 데이터 수집 (Label 0)")
+        print("2. 거북목 자세 데이터 수집 (Label 1)")
+        print("3. 모델 학습 (data.csv -> .pth)")
+        print("4. 종료")
+        
+        menu = input("선택: ")
+        
+        if menu == '1':
+            input("바른 자세를 취하고 엔터를 누르세요...")
+            collect_pose_data(label=0, num_samples=500, save_path=DATA_PATH)
+        elif menu == '2':
+            input("거북목 자세를 취하고 엔터를 누르세요...")
+            collect_pose_data(label=1, num_samples=500, save_path=DATA_PATH)
+        elif menu == '3':
+            train_model(data_path=DATA_PATH, weight_path=MODEL_PATH)
+        elif menu == '4':
+            print("프로그램을 종료합니다.")
+            break
+        else:
+            print("잘못된 입력입니다.")
