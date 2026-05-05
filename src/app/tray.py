@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 
 _SAMPLE_FLUSH_INTERVAL = 60.0  # seconds between score_samples flushes
 
-_dashboard_window: tk.Toplevel | None = None
+_dashboard: object | None = None  # Dashboard | None (lazy import 회피)
 
 
 # ---------------------------------------------------------------------------
@@ -149,11 +149,17 @@ def _load_icon():
     return img
 
 
-def _build_menu(state: SharedState, cmd_queue: queue.Queue, root: tk.Tk):
+def _build_menu(
+    state: SharedState,
+    cmd_queue: queue.Queue,
+    root: tk.Tk,
+    conn: sqlite3.Connection,
+    session_id: int,
+):
     import pystray
 
     def on_open_dashboard(icon, item):
-        cmd_queue.put(lambda: _open_dashboard(state, root))
+        cmd_queue.put(lambda: _open_dashboard(state, root, conn, session_id))
 
     def on_toggle_pause(icon, item):
         state.paused = not state.paused
@@ -183,32 +189,26 @@ def _build_menu(state: SharedState, cmd_queue: queue.Queue, root: tk.Tk):
     )
 
 
-def _open_dashboard(state: SharedState, root: tk.Tk) -> None:
+def _open_dashboard(
+    state: SharedState,
+    root: tk.Tk,
+    conn: sqlite3.Connection,
+    session_id: int,
+) -> None:
     """메인 스레드(cmd_queue 경유)에서만 호출된다."""
-    global _dashboard_window
+    global _dashboard
 
-    if _dashboard_window is not None:
+    if _dashboard is not None and _dashboard.window is not None:
         try:
-            if _dashboard_window.winfo_exists():
-                _dashboard_window.lift()
+            if _dashboard.window.winfo_exists():
+                _dashboard.window.lift()
                 return
         except tk.TclError:
             pass
 
-    state.mode = "dashboard"
-    win = tk.Toplevel(root)
-    win.title("PoseKeeper 대시보드")
-    win.geometry("400x300")
-    tk.Label(win, text="대시보드 (준비 중)", font=("Arial", 14)).pack(expand=True)
-
-    def on_close():
-        global _dashboard_window
-        state.mode = "bg"
-        win.destroy()
-        _dashboard_window = None
-
-    win.protocol("WM_DELETE_WINDOW", on_close)
-    _dashboard_window = win
+    from src.app.dashboard import Dashboard
+    _dashboard = Dashboard(root, state, conn, session_id)
+    _dashboard.open()
 
 
 # ---------------------------------------------------------------------------
@@ -272,7 +272,7 @@ def run_tray() -> None:
         "PoseKeeper",
         _load_icon(),
         title="PoseKeeper",
-        menu=_build_menu(state, cmd_queue, root),
+        menu=_build_menu(state, cmd_queue, root, conn, session_id),
     )
     icon.run_detached()
 
