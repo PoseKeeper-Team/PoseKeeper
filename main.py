@@ -7,7 +7,15 @@
 """
 from __future__ import annotations
 
+import logging
 import sys
+
+logging.basicConfig(
+    level=logging.WARNING,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    datefmt="%H:%M:%S",
+)
+logging.getLogger("src").setLevel(logging.DEBUG)
 
 
 def main() -> int:
