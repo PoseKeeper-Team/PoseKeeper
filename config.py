@@ -42,12 +42,17 @@ TURTLE_NECK_THRESHOLD_SEC: float = 5.0
 DROWSINESS_THRESHOLD_SEC: float = 3.0
 DISTRACTION_THRESHOLD_SEC: float = 10.0
 ALERT_COOLDOWN_SEC: float = 60.0
+EAR_THRESHOLD: float = 0.20
+MAR_THRESHOLD: float = 0.60
+HEADPOSE_YAW_THRESHOLD_DEG: float = 20.0
+HEADPOSE_PITCH_THRESHOLD_DEG: float = 15.0
 
 
 # --- Model input dims (locked by MediaPipe) ---------------------------
 POSE_LANDMARK_DIM: int = 33 * 3              # MLP / Autoencoder input
 FACEMESH_LANDMARK_COUNT: int = 468           # LSTM raw landmark count
 LSTM_SEQUENCE_LENGTH: int = 30               # ~5 seconds at 6 fps
+LSTM_FEATURE_DIM: int = FACEMESH_LANDMARK_COUNT * 3 + 1 + 1 + 3
 
 
 # --- Paths ------------------------------------------------------------
