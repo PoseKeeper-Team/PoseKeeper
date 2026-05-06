@@ -363,3 +363,44 @@ def build_lstm_feature(
     return np.concatenate(
         [face_vec, [ear], [mar], [yaw], [pitch], [roll]]
     ).astype(np.float32)
+
+
+
+# ---------------------------------------------------------------------------
+# 이상 자세 탐지 모듈용 헬퍼 (autoencoder)
+# ---------------------------------------------------------------------------
+
+mp_pose = mp.solutions.pose
+mp_drawing = mp.solutions.drawing_utils
+mp_drawing_styles = mp.solutions.drawing_styles
+
+
+def extract_landmarks(results) -> np.ndarray | None:
+    if not results.pose_landmarks:
+        return None
+    landmarks = results.pose_landmarks.landmark
+    vector = []
+    for lm in landmarks:
+        vector.extend([lm.x, lm.y, lm.z])
+    return np.array(vector, dtype=np.float32)
+
+
+def normalize_landmarks(vector: np.ndarray) -> np.ndarray:
+    vec = vector.copy().reshape(33, 3)
+    left_shoulder  = vec[11]
+    right_shoulder = vec[12]
+    center = (left_shoulder + right_shoulder) / 2.0
+    shoulder_width = np.linalg.norm(left_shoulder - right_shoulder) + 1e-8
+    vec = (vec - center) / shoulder_width
+    return vec.flatten().astype(np.float32)
+
+
+def draw_landmarks(frame, results):
+    if results.pose_landmarks:
+        mp_drawing.draw_landmarks(
+            frame,
+            results.pose_landmarks,
+            mp_pose.POSE_CONNECTIONS,
+            landmark_drawing_spec=mp_drawing_styles.get_default_pose_landmarks_style(),
+        )
+    return frame

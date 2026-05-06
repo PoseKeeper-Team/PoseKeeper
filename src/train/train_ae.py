@@ -15,6 +15,7 @@ Google Colab 예시:
     !python train.py --data data/normal_poses.npy --epochs 150 --latent 16
 """
 
+from config import PATHS, WEIGHT_FILES
 import argparse
 import os
 
@@ -24,7 +25,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader, TensorDataset, random_split
 import matplotlib.pyplot as plt
 
-from model import PoseAutoencoder
+from src.models.autoencoder import PoseAutoencoder
 
 
 # ─────────────────────────────────────────────
@@ -175,8 +176,8 @@ def train(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Autoencoder 학습")
-    parser.add_argument("--data",       default="data/normal_poses.npy", help="학습 데이터 경로")
-    parser.add_argument("--save_dir",   default="checkpoints",           help="모델 저장 폴더")
+    parser.add_argument("--data",       default=str(PATHS["raw"] / "normal_poses.npy"), help="학습 데이터 경로")
+    parser.add_argument("--save_dir",   default=str(PATHS["weights"]),           help="모델 저장 폴더")
     parser.add_argument("--epochs",     type=int,   default=100)
     parser.add_argument("--batch_size", type=int,   default=64)
     parser.add_argument("--lr",         type=float, default=1e-3)

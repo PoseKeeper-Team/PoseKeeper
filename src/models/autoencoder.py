@@ -2,7 +2,6 @@
 
 Owner: 김병훈. 학습 스크립트는 src/train/train_ae.py.
 """
-
 """
 model.py
 ---------
