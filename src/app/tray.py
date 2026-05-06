@@ -41,6 +41,8 @@ class SharedState:
     mode: str = "bg"           # "bg" | "dashboard"
     paused: bool = False
     running: bool = True
+    camera_ok: bool = False
+    camera_retry: bool = False
     latest_frame: np.ndarray | None = None
     latest_result: dict | None = None
     _lock: threading.Lock = field(
@@ -76,17 +78,36 @@ def inference_loop(
     frame_count = 0
     sample_buf: list[dict] = []
     last_flush = time.time()
+    consecutive_fail = 0
+    _FAIL_THRESHOLD = 30  # ~3초 (0.1s sleep × 30)
 
     while state.running:
+        if state.camera_retry:
+            cap.release()
+            cap.open(0)
+            state.camera_ok = cap.isOpened()
+            state.camera_retry = False
+            consecutive_fail = 0
+            logger.info("카메라 재시도 — %s", "성공" if state.camera_ok else "실패")
+
+        if not state.camera_ok:
+            time.sleep(0.5)
+            continue
+
         if state.paused:
             time.sleep(0.1)
             continue
 
         ok, frame = cap.read()
         if not ok:
+            consecutive_fail += 1
+            if consecutive_fail >= _FAIL_THRESHOLD:
+                state.camera_ok = False
+                logger.warning("웹캠 신호 끊김 감지 — 대시보드에서 재시도 가능")
             time.sleep(0.1)
             continue
 
+        consecutive_fail = 0
         frame_count += 1
         if not should_process(state.mode, frame_count):
             continue
@@ -235,11 +256,9 @@ def run_tray() -> None:
     alert_manager = AlertManager(conn=conn, session_id=session_id)
 
     cap = cv2.VideoCapture(0)
-    if not cap.isOpened():
-        print("[오류] 웹캠을 열 수 없습니다.")
-        close_session(conn, session_id, avg_score=None)
-        conn.close()
-        return
+    state.camera_ok = cap.isOpened()
+    if not state.camera_ok:
+        logger.warning("웹캠 초기 열기 실패 — 대시보드에서 재시도 가능")
 
     root = tk.Tk()
     root.withdraw()
@@ -282,6 +301,8 @@ def run_tray() -> None:
         state.running = False
         icon.stop()
         infer_thread.join(timeout=3)
+        if infer_thread.is_alive():
+            logger.warning("추론 스레드 미종료 — 강제 정리")
         cap.release()
         try:
             close_session(conn, session_id, avg_score=None)

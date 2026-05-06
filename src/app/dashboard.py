@@ -109,6 +109,15 @@ class Dashboard:
         )
         self._video_label.pack(expand=True)
 
+        self._retry_btn = tk.Button(
+            video_container,
+            text="카메라 재시도",
+            command=self._on_retry_camera,
+            bg="#e74c3c", fg="white",
+            font=("Arial", 10, "bold"),
+            padx=8, pady=4,
+        )
+
         self._status_label = tk.Label(
             left, text="정상", bg=_STATUS_COLORS["normal"], fg="white",
             font=("Arial", 12, "bold"), padx=8, pady=4,
@@ -175,11 +184,21 @@ class Dashboard:
     # 갱신 루프
     # ------------------------------------------------------------------
 
+    def _on_retry_camera(self) -> None:
+        self._state.camera_retry = True
+        logger.info("카메라 재시도 요청")
+
     def _update_frame(self) -> None:
         if not self._alive():
             return
         frame, result = self._state.read_latest()
-        if frame is not None:
+
+        if not self._state.camera_ok:
+            self._photo = None
+            self._video_label.configure(image="", text="카메라 신호 없음")
+            self._retry_btn.place(relx=0.5, rely=0.65, anchor=tk.CENTER)
+        elif frame is not None:
+            self._retry_btn.place_forget()
             display = frame.copy()
             # predictor가 landmarks_bgr를 제공하면 오버레이 (graceful degradation)
             if result and "landmarks_bgr" in result:
@@ -189,6 +208,9 @@ class Dashboard:
             img = Image.fromarray(rgb).resize((_VIDEO_W, _VIDEO_H), Image.BILINEAR)
             self._photo = ImageTk.PhotoImage(img)
             self._video_label.configure(image=self._photo, text="")
+        else:
+            self._retry_btn.place_forget()
+
         self.window.after(33, self._update_frame)
 
     def _update_status(self) -> None:
