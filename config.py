@@ -67,4 +67,5 @@ WEIGHT_FILES: dict[str, Path] = {
     "mlp": PATHS["weights"] / "mlp.pth",
     "lstm": PATHS["weights"] / "lstm.pth",
     "autoencoder": PATHS["weights"] / "autoencoder.pth",
+    "autoencoder_threshold": PATHS["weights"] / "threshold.npy",
 }

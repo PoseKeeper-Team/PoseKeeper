@@ -3,7 +3,7 @@
 Public API
 ----------
 should_process(mode)                        -> bool
-extract_pose_landmarks(frame, mode)         -> ndarray(99,)   | None
+extract_pose_landmarks(frame, mode)         -> tuple[ndarray(99,)|None, mp_results|None]
 process_face(frame, mode)                   -> NormalizedLandmarkList | None
 extract_face_landmarks(frame, mode)         -> ndarray(1404,) | None
 compute_ear(face_lm)                        -> float
@@ -113,29 +113,34 @@ def should_process(mode: str = "bg") -> bool:
 def extract_pose_landmarks(
     frame: np.ndarray | None,
     mode: str = "bg",
-) -> np.ndarray | None:
+) -> tuple[np.ndarray | None, object | None]:
     """Extract 33 Pose landmarks from a BGR frame and flatten to (99,).
+
+    Returns both the flattened vector and the raw MediaPipe results object so
+    that callers can reuse the results for drawing without a second detector call.
 
     Args:
         frame: BGR numpy array from webcam.
         mode: "bg" or "dashboard".
 
     Returns:
-        float32 ndarray of shape (POSE_LANDMARK_DIM,) = (99,),
-        or None if frame is None or landmarks not detected.
+        (vec, results) where vec is float32 ndarray of shape (99,) and results
+        is the MediaPipe Pose results object. Both are None if frame is None or
+        landmarks are not detected.
 
     Raises:
         ValueError: if mode is invalid.
     """
     _check_mode(mode)
     if frame is None:
-        return None
+        return None, None
     frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     results = _get_pose(mode).process(frame_rgb)
     if not results.pose_landmarks:
-        return None
+        return None, None
     lm = results.pose_landmarks.landmark
-    return np.array([[p.x, p.y, p.z] for p in lm], dtype=np.float32).flatten()
+    vec = np.array([[p.x, p.y, p.z] for p in lm], dtype=np.float32).flatten()
+    return vec, results
 
 
 def process_face(
@@ -371,8 +376,14 @@ def build_lstm_feature(
 # ---------------------------------------------------------------------------
 
 mp_pose = mp.solutions.pose
+mp_face_mesh = mp.solutions.face_mesh
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
+_FACE_CONTOUR_SPEC = mp_drawing.DrawingSpec(
+    color=(0, 255, 180),
+    thickness=1,
+    circle_radius=1,
+)
 
 
 def extract_landmarks(results) -> np.ndarray | None:
@@ -395,12 +406,20 @@ def normalize_landmarks(vector: np.ndarray) -> np.ndarray:
     return vec.flatten().astype(np.float32)
 
 
-def draw_landmarks(frame, results):
+def draw_landmarks(frame, results, face_lm=None):
     if results.pose_landmarks:
         mp_drawing.draw_landmarks(
             frame,
             results.pose_landmarks,
             mp_pose.POSE_CONNECTIONS,
             landmark_drawing_spec=mp_drawing_styles.get_default_pose_landmarks_style(),
+        )
+    if face_lm is not None:
+        mp_drawing.draw_landmarks(
+            frame,
+            face_lm,
+            mp_face_mesh.FACEMESH_CONTOURS,
+            landmark_drawing_spec=None,
+            connection_drawing_spec=_FACE_CONTOUR_SPEC,
         )
     return frame
