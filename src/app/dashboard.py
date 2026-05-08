@@ -199,11 +199,10 @@ class Dashboard:
             self._retry_btn.place(relx=0.5, rely=0.65, anchor=tk.CENTER)
         elif frame is not None:
             self._retry_btn.place_forget()
-            display = frame.copy()
-            # predictor가 landmarks_bgr를 제공하면 오버레이 (graceful degradation)
-            if result and "landmarks_bgr" in result:
-                for pt in result["landmarks_bgr"]:
-                    cv2.circle(display, tuple(pt), 3, (0, 255, 0), -1)
+            if result and "overlay_frame" in result:
+                display = result["overlay_frame"]
+            else:
+                display = frame.copy()
             rgb = cv2.cvtColor(display, cv2.COLOR_BGR2RGB)
             img = Image.fromarray(rgb).resize((_VIDEO_W, _VIDEO_H), Image.BILINEAR)
             self._photo = ImageTk.PhotoImage(img)

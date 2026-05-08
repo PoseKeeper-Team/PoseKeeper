@@ -19,12 +19,12 @@ logging.getLogger("src").setLevel(logging.DEBUG)
 
 
 def main() -> int:
-    # 실제 실행 로직은 src/app/tray.py 가 완성되면 여기서 호출.
+    # 트레이 앱 import가 실패하면 의존성 또는 코드 경로 문제가 있는 상태다.
     try:
         from src.app.tray import run_tray
-    except ImportError:
-        print("[INFO] src/app/tray.py 의 run_tray() 가 아직 구현되지 않았습니다.")
-        print("       먼저 `python setup.py` 와 `python test_env.py` 로 환경을 검증하세요.")
+    except ImportError as exc:
+        print(f"[ERROR] 트레이 앱 import 실패: {exc}")
+        print("        `python setup.py` 와 `python test_env.py` 로 환경을 먼저 점검하세요.")
         return 0
     return run_tray()
 

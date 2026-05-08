@@ -23,6 +23,7 @@ import numpy as np
 
 import config
 from src.app.alert import AlertManager
+from src.inference.predictor import predict
 from src.utils.db import close_session, flush_score_samples, init_db, open_session
 
 logger = logging.getLogger(__name__)
@@ -30,6 +31,24 @@ logger = logging.getLogger(__name__)
 _SAMPLE_FLUSH_INTERVAL = 60.0  # seconds between score_samples flushes
 
 _dashboard: object | None = None  # Dashboard | None (lazy import 회피)
+
+
+def _fallback_result() -> dict:
+    return {
+        "timestamp": time.time(),
+        "is_skip": False,
+        "posture_class": None,
+        "posture_label": None,
+        "posture_confidence": None,
+        "focus_class": None,
+        "focus_label": None,
+        "focus_confidence": None,
+        "anomaly_score": None,
+        "is_anomaly": False,
+        "pose_score": 100.0,
+        "events": [],
+        "event_severity": {},
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -113,10 +132,10 @@ def inference_loop(
             continue
 
         try:
-            from src.inference.predictor import predict
             result = predict(frame, state.mode)
         except Exception:
-            result = {"events": [], "event_severity": {}, "pose_score": 100}
+            logger.exception("predictor 실행 실패")
+            result = _fallback_result()
 
         state.update_frame(frame, result)
         alert_manager.process(result)
