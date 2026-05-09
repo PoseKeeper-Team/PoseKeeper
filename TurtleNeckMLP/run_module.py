@@ -6,6 +6,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from collect import collect_pose_data
 from train_mlp import train_model
 import os
+import config
 
 if __name__ == "__main__":
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -18,7 +19,8 @@ if __name__ == "__main__":
         print("2. 거북목 자세 데이터 수집 (Label 1)")
         print("3. 심한 거북목 자세 데이터 수집 (Label 2)")
         print("4. 모델 학습 (data.csv -> .pth)")
-        print("5. 종료")
+        print("5. 가공된 데이터로 학습 (X.npy, y.npy -> .pth)")
+        print("6. 종료")
         
         menu = input("선택: ")
         
@@ -34,6 +36,9 @@ if __name__ == "__main__":
         elif menu == '4':
             train_model(data_path=DATA_PATH, weight_path=MODEL_PATH)
         elif menu == '5':
+            processed_dir = config.PATHS["processed"] / "mlp"
+            train_model(data_path=str(processed_dir), weight_path=MODEL_PATH, from_processed=True)
+        elif menu == '6':
             print("프로그램을 종료합니다.")
             break
         else:

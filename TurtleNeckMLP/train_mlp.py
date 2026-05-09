@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 import numpy as np
 import torch
@@ -6,15 +7,25 @@ import torch.optim as optim
 from torch.utils.data import DataLoader, TensorDataset
 from TurtleNeckMLP.mlp_model import TurtleNeckMLP
 
-def train_model(data_path="data.csv", weight_path="weights/mlp.pth"):
-    # 데이터 로드 (CSV에서 numpy로)
-    try:
-        data = pd.read_csv(data_path)
-        X = data.iloc[:, :-1].values.astype(np.float32)
-        y = data.iloc[:, -1].values.astype(np.int64)
-    except Exception as e:
-        print(f"데이터 로드 실패: {e}")
-        return
+def train_model(data_path="data.csv", weight_path="weights/mlp.pth", from_processed=False):
+    # 데이터 로드
+    if from_processed:
+        try:
+            X = np.load(os.path.join(data_path, "X.npy")).astype(np.float32)
+            y = np.load(os.path.join(data_path, "y.npy")).astype(np.int64)
+            print(f"가공된(NPY) 데이터 로드 완료: {X.shape}")
+        except Exception as e:
+            print(f"NPY 데이터 로드 실패: {e}")
+            return
+    else:
+        try:
+            data = pd.read_csv(data_path)
+            X = data.iloc[:, :-1].values.astype(np.float32)
+            y = data.iloc[:, -1].values.astype(np.int64)
+            print(f"CSV 데이터 로드 완료: {X.shape}")
+        except Exception as e:
+            print(f"데이터 로드 실패: {e}")
+            return
 
     # 간단한 Train/Val 분리 (8:2)
     indices = np.arange(len(X))
