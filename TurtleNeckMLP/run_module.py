@@ -4,7 +4,7 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from collect import collect_pose_data
-from train import train_model
+from train_mlp import train_model
 import os
 
 if __name__ == "__main__":
@@ -16,8 +16,9 @@ if __name__ == "__main__":
         print("\n--- Turtle Neck MLP Module ---")
         print("1. 정상 자세 데이터 수집 (Label 0)")
         print("2. 거북목 자세 데이터 수집 (Label 1)")
-        print("3. 모델 학습 (data.csv -> .pth)")
-        print("4. 종료")
+        print("3. 심한 거북목 자세 데이터 수집 (Label 2)")
+        print("4. 모델 학습 (data.csv -> .pth)")
+        print("5. 종료")
         
         menu = input("선택: ")
         
@@ -28,8 +29,11 @@ if __name__ == "__main__":
             input("거북목 자세를 취하고 엔터를 누르세요...")
             collect_pose_data(label=1, num_samples=500, save_path=DATA_PATH)
         elif menu == '3':
-            train_model(data_path=DATA_PATH, weight_path=MODEL_PATH)
+            input("심하게 고개를 숙인 자세를 취하고 엔터를 누르세요...")
+            collect_pose_data(label=2, num_samples=500, save_path=DATA_PATH)
         elif menu == '4':
+            train_model(data_path=DATA_PATH, weight_path=MODEL_PATH)
+        elif menu == '5':
             print("프로그램을 종료합니다.")
             break
         else:

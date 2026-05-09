@@ -1,10 +1,30 @@
+import pandas as pd
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, TensorDataset
 from TurtleNeckMLP.mlp_model import TurtleNeckMLP
 
-def train_model(train_x, train_y, val_x, val_y, config):
+def train_model(data_path="data.csv", weight_path="weights/mlp.pth"):
+    # 데이터 로드 (CSV에서 numpy로)
+    try:
+        data = pd.read_csv(data_path)
+        X = data.iloc[:, :-1].values.astype(np.float32)
+        y = data.iloc[:, -1].values.astype(np.int64)
+    except Exception as e:
+        print(f"데이터 로드 실패: {e}")
+        return
+
+    # 간단한 Train/Val 분리 (8:2)
+    indices = np.arange(len(X))
+    np.random.shuffle(indices)
+    split = int(len(X) * 0.8)
+    train_x, val_x = X[indices[:split]], X[indices[split:]]
+    train_y, val_y = y[indices[:split]], y[indices[split:]]
+
+    config = {'batch_size': 32, 'lr': 0.001, 'epochs': 50}
+
     # 1. 데이터셋 준비 (Numpy -> Tensor)
     train_dataset = TensorDataset(
         torch.FloatTensor(train_x), 
@@ -36,8 +56,8 @@ def train_model(train_x, train_y, val_x, val_y, config):
         print(f"Epoch [{epoch+1}/{config['epochs']}], Loss: {total_loss/len(train_loader):.4f}")
 
     # 4. 모델 저장
-    torch.save(model.state_dict(), "weights/mlp.pth")
-    print("Model saved to weights/mlp.pth")
+    torch.save(model.state_dict(), weight_path)
+    print(f"Model saved to {weight_path}")
 
 if __name__ == "__main__":
     # 예시 설정값

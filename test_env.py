@@ -113,6 +113,7 @@ def check_tkinter() -> None:
 def main() -> int:
     print(f"\n=== PoseKeeper environment check ===\n")
     check_import("numpy")
+    check_import("pandas")
     check_import("torch")
     check_import("cv2")
     check_import("mediapipe")

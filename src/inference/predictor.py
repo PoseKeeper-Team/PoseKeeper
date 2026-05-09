@@ -27,7 +27,6 @@ from src.utils.mediapipe_utils import (
 
 logger = logging.getLogger(__name__)
 
-_POSTURE_LABELS = {0: "normal", 1: "turtle_neck", 2: "severe_turtle_neck"}
 _FOCUS_LABELS   = {0: "focused", 1: "drowsy", 2: "distracted"}
 _PREDICTOR: "PosePredictor | None" = None
 
@@ -300,7 +299,11 @@ class PosePredictor:
             except Exception as e:
                 logger.warning("MLP inference failed: %s", e)
 
-        posture_label = _POSTURE_LABELS.get(posture_class) if posture_class is not None else None
+        # 모델에 정의된 LABELS 참조
+        posture_label = None
+        if posture_class is not None:
+            from src.models.mlp import PoseMLP
+            posture_label = PoseMLP.LABELS.get(posture_class)
 
         # ── LSTM (집중도) ──────────────────────────────────────────────
         focus_class: int | None = None
