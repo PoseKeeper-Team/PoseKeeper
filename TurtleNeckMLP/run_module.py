@@ -5,39 +5,40 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from collect import collect_pose_data
 from train_mlp import train_model
+from src.data.preprocess import preprocess_mlp
 import os
 import config
 
 if __name__ == "__main__":
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    DATA_PATH = os.path.join(BASE_DIR, "data.csv")
+    RAW_DATA_PATH = os.path.join(BASE_DIR, "data.csv")
     MODEL_PATH = os.path.join(BASE_DIR, "turtle_neck_mlp.pth")
+    PROCESSED_DIR = config.PATHS["processed"] / "mlp"
 
     while True:
         print("\n--- Turtle Neck MLP Module ---")
         print("1. 정상 자세 데이터 수집 (Label 0)")
         print("2. 거북목 자세 데이터 수집 (Label 1)")
         print("3. 심한 거북목 자세 데이터 수집 (Label 2)")
-        print("4. 모델 학습 (data.csv -> .pth)")
-        print("5. 가공된 데이터로 학습 (X.npy, y.npy -> .pth)")
+        print("4. 데이터 전처리 (CSV -> NPY)")
+        print("5. 모델 학습 (Processed NPY -> .pth)")
         print("6. 종료")
         
         menu = input("선택: ")
         
         if menu == '1':
             input("바른 자세를 취하고 엔터를 누르세요...")
-            collect_pose_data(label=0, num_samples=500, save_path=DATA_PATH)
+            collect_pose_data(label=0, num_samples=500, save_path=RAW_DATA_PATH)
         elif menu == '2':
             input("거북목 자세를 취하고 엔터를 누르세요...")
-            collect_pose_data(label=1, num_samples=500, save_path=DATA_PATH)
+            collect_pose_data(label=1, num_samples=500, save_path=RAW_DATA_PATH)
         elif menu == '3':
             input("심하게 고개를 숙인 자세를 취하고 엔터를 누르세요...")
-            collect_pose_data(label=2, num_samples=500, save_path=DATA_PATH)
+            collect_pose_data(label=2, num_samples=500, save_path=RAW_DATA_PATH)
         elif menu == '4':
-            train_model(data_path=DATA_PATH, weight_path=MODEL_PATH)
+            preprocess_mlp()
         elif menu == '5':
-            processed_dir = config.PATHS["processed"] / "mlp"
-            train_model(data_path=str(processed_dir), weight_path=MODEL_PATH, from_processed=True)
+            train_model(data_path=str(PROCESSED_DIR), weight_path=MODEL_PATH)
         elif menu == '6':
             print("프로그램을 종료합니다.")
             break

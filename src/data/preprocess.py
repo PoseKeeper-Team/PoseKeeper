@@ -17,20 +17,45 @@ from __future__ import annotations
 
 import argparse
 import json
-
+import os
+import pandas as pd
 import numpy as np
 
 import config
 
 
 def preprocess_mlp() -> None:
+    """MLP 거북목 탐지용 전처리.
+    
+    입력: TurtleNeckMLP/data.csv (Raw)
+    출력: data/processed/mlp/X.npy, y.npy (Processed)
     """
-    MLP 거북목 탐지용 전처리 자리.
+    raw_path = config.PROJECT_ROOT / "TurtleNeckMLP" / "data.csv"
+    out_dir = config.PATHS["processed"] / "mlp"
+    out_dir.mkdir(parents=True, exist_ok=True)
 
-    지금 collect.py의 기존 collect()는 Pose landmark를 .npy로 저장한다.
-    이후 posture raw 데이터를 data/processed/mlp/ 형태로 정리할 때 여기에 구현한다.
-    """
-    print("[TODO] MLP 거북목 데이터 전처리는 아직 구현 전입니다.")
+    if not raw_path.exists():
+        print(f"[FAIL] Raw data not found at {raw_path}")
+        return
+
+    try:
+        df = pd.read_csv(raw_path)
+        X = df.iloc[:, :-1].values.astype(np.float32)
+        y = df.iloc[:, -1].values.astype(np.int64)
+
+        # 좌우 반전 증강 (99차원: x, y, z 반복 중 x만 반전)
+        X_flipped = X.copy()
+        X_flipped[:, 0::3] = 1.0 - X_flipped[:, 0::3]
+
+        X_final = np.concatenate([X, X_flipped], axis=0)
+        y_final = np.concatenate([y, y], axis=0)
+
+        np.save(out_dir / "X.npy", X_final)
+        np.save(out_dir / "y.npy", y_final)
+        print(f"[MLP] Preprocessing complete. Samples: {len(X)} -> {len(X_final)}")
+        print(f"[MLP] Saved to {out_dir}")
+    except Exception as e:
+        print(f"[MLP] Preprocessing failed: {e}")
 
 
 def preprocess_ae() -> None:
