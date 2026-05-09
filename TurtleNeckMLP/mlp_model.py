@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 
 class TurtleNeckMLP(nn.Module):
-    def __init__(self, input_dim=99, hidden_dims=[128, 64, 32]):
+    def __init__(self, input_dim=99, hidden_dims=[128, 64, 32], num_classes=3):
         super(TurtleNeckMLP, self).__init__()
         
         layers = []
@@ -14,15 +14,14 @@ class TurtleNeckMLP(nn.Module):
             layers.append(nn.Dropout(0.2))
             last_dim = h_dim
         
-        # 이진 분류를 위한 최종 출력층
-        layers.append(nn.Linear(last_dim, 1))
-        layers.append(nn.Sigmoid())
+        # 다중 분류(3개 클래스: 정상, 거북목, 심한 거북목)를 위한 출력층
+        layers.append(nn.Linear(last_dim, num_classes))
         
         self.model = nn.Sequential(*layers)
 
     def forward(self, x):
         """
         x: (batch_size, 99) 형태의 Pose landmark tensor
-        return: 0~1 사이의 거북목 확률
+        return: (batch_size, num_classes) 형태의 Logits
         """
         return self.model(x)

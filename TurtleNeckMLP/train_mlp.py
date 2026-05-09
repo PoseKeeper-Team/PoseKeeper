@@ -8,14 +8,14 @@ def train_model(train_x, train_y, val_x, val_y, config):
     # 1. 데이터셋 준비 (Numpy -> Tensor)
     train_dataset = TensorDataset(
         torch.FloatTensor(train_x), 
-        torch.FloatTensor(train_y).view(-1, 1)
+        torch.LongTensor(train_y)  # CrossEntropyLoss는 Long 타입을 사용
     )
     train_loader = DataLoader(train_dataset, batch_size=config['batch_size'], shuffle=True)
 
     # 2. 모델 및 최적화 설정
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = TurtleNeckMLP(input_dim=99).to(device)
-    criterion = nn.BCELoss()
+    model = TurtleNeckMLP(input_dim=99, num_classes=3).to(device)
+    criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=config['lr'])
 
     # 3. 학습 루프
