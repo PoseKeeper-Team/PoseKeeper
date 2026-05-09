@@ -35,12 +35,41 @@ def preprocess_mlp() -> None:
 
 def preprocess_ae() -> None:
     """
-    Autoencoder 비정형 이상자세 탐지용 전처리 자리.
+    Autoencoder 비정형 이상자세 탐지용 전처리.
 
-    MLP와 같은 Pose landmark를 사용할 가능성이 높지만,
-    라벨 방식과 학습 방식이 다르므로 별도 함수로 분리한다.
+    입력: data/raw/normal_poses.npy
+    출력: data/processed/ae/normal_poses.npy
     """
-    print("[TODO] Autoencoder 이상자세 데이터 전처리는 아직 구현 전입니다.")
+    raw_path = config.PATHS["raw"] / "normal_poses.npy"
+    out_dir  = config.PATHS["processed"] / "ae"
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    if not raw_path.exists():
+        raise FileNotFoundError(
+            f"{raw_path} 가 없습니다. 먼저 collect.py로 데이터를 수집하세요."
+        )
+
+    data = np.load(raw_path).astype(np.float32)
+    print(f"[로드] {raw_path}  shape: {data.shape}")
+
+    # ── 좌우 반전 증강 ──────────────────────────────────────────
+    # x 좌표만 반전 (x, y, z 중 x = 인덱스 0, 3, 6 ...)
+    flipped = data.copy()
+    flipped[:, 0::3] = 1.0 - flipped[:, 0::3]
+
+    # ── 밝기 조절 증강 (좌표에 작은 노이즈 추가) ────────────────
+    noise = np.random.normal(0, 0.01, data.shape).astype(np.float32)
+    noisy = data + noise
+
+    # ── 합치기 ──────────────────────────────────────────────────
+    augmented = np.concatenate([data, flipped, noisy], axis=0)
+    np.random.shuffle(augmented)
+
+    out_path = out_dir / "normal_poses.npy"
+    np.save(out_path, augmented)
+
+    print(f"[전처리 완료] 원본 {len(data)}개 → 증강 후 {len(augmented)}개")
+    print(f"[저장] {out_path}")
 
 
 def _make_windows(features: np.ndarray, seq_len: int, stride: int) -> list[np.ndarray]:
