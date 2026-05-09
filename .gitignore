@@ -18,7 +18,7 @@ env/
 
 # Project artifacts (do not commit raw data or trained weights)
 data/raw/
-data/processed/
+
 data/*.db
 data/*.db-journal
 data/*.db-wal
