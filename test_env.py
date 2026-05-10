@@ -9,6 +9,8 @@ flow doesn't need them.
 """
 from __future__ import annotations
 
+import platform
+import ssl
 import importlib
 import sys
 import traceback
@@ -65,9 +67,12 @@ def check_device() -> None:
 def check_mediapipe_inference() -> None:
     """Actually instantiate Pose + FaceMesh and run them on a dummy frame."""
     try:
+        if platform.system() == "Darwin":
+            ssl._create_default_https_context = ssl._create_unverified_context
+
         import numpy as np
-        import mediapipe.python.solutions.pose as mp_pose
-        import mediapipe.python.solutions.face_mesh as mp_face
+        from mediapipe.solutions import pose as mp_pose
+        from mediapipe.solutions import face_mesh as mp_face
 
         dummy = np.zeros((240, 320, 3), dtype=np.uint8)
         with mp_pose.Pose(model_complexity=0) as pose:

@@ -1,15 +1,24 @@
+import platform
+import ssl
 import sys
 import os
+
+# macOS OpenCV/MediaPipe 충돌 및 Fork 안전성 문제 해결
+os.environ["OBJC_DISABLE_INITIALIZE_FORK_SAFETY"] = "YES"
+
 # 상대 임포트 에러 방지를 위한 경로 추가
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from collect import collect_pose_data
 from train_mlp import train_model
 from src.data.preprocess import preprocess_mlp
-import os
 import config
 
 if __name__ == "__main__":
+    # macOS에서 MediaPipe 모델 다운로드 시 SSL 오류 방지
+    if platform.system() == "Darwin":
+        ssl._create_default_https_context = ssl._create_unverified_context
+
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     RAW_DATA_PATH = os.path.join(BASE_DIR, "data.csv")
     MODEL_PATH = os.path.join(BASE_DIR, "turtle_neck_mlp.pth")

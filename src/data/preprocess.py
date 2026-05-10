@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """데이터 전처리 — 히스토그램 평활화, 좌우 반전·밝기 증강.
 
 Owner: 김병훈. data/raw/ → data/processed/ 변환.
@@ -12,8 +14,6 @@ Owner: 김병훈. data/raw/ → data/processed/ 변환.
 현재 이 파일에서는 LSTM 집중도 분석용 전처리를 먼저 구현한다.
 MLP/Autoencoder 전처리는 구조만 열어두고 TODO로 남긴다.
 """
-
-from __future__ import annotations
 
 import argparse
 import json

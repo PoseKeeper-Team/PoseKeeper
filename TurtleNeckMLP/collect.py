@@ -1,4 +1,6 @@
 import cv2
+import platform
+import ssl
 import pandas as pd
 import numpy as np
 import os
@@ -10,6 +12,10 @@ from src.utils.mediapipe_utils import extract_pose_landmarks
 
 def collect_pose_data(label: int, num_samples: int = 500, save_path: str = "data.csv"):
     """웹캠에서 포즈 랜드마크를 추출하여 CSV에 저장합니다."""
+    # macOS SSL 인증서 우회
+    if platform.system() == "Darwin":
+        ssl._create_default_https_context = ssl._create_unverified_context
+
     cap = cv2.VideoCapture(0)
     samples = []
     count = 0
