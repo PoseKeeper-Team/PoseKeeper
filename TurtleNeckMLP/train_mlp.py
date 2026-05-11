@@ -55,6 +55,18 @@ def train_model(data_path="data/processed/mlp", weight_path="weights/mlp.pth"):
         
         print(f"Epoch [{epoch+1}/{config['epochs']}], Loss: {total_loss/len(train_loader):.4f}")
 
+    # 4. 검증 정확도 확인
+    model.eval()
+    with torch.no_grad():
+        val_x_tensor = torch.FloatTensor(val_x).to(device)
+        val_y_tensor = torch.LongTensor(val_y).to(device)
+        outputs = model(val_x_tensor)
+        _, predicted = torch.max(outputs.data, 1)
+        
+        total = val_y_tensor.size(0)
+        correct = (predicted == val_y_tensor).sum().item()
+        print(f"\n최종 검증 정확도: {100 * correct / total:.2f}%")
+
     # 4. 모델 저장
     torch.save(model.state_dict(), weight_path)
     print(f"Model saved to {weight_path}")
