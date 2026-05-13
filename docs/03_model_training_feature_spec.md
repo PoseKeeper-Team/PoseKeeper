@@ -50,7 +50,7 @@ PoseKeeper에서 사용하는 3개 모델을 각각 학습하고, 실시간 추�
 | 출력 | 재구성 벡터 `(99,)` |
 | 학습 데이터 | 정상 자세 데이터만 사용 |
 | 판정 기준 | reconstruction error threshold |
-| 저장 파일 | `weights/autoencoder.pth` |
+| 저장 파일 | `config.WEIGHT_FILES["autoencoder"]` (`weights/autoencoder_best.pth`) |
 | 담당 | 김병훈 |
 
 ## 4. 학습 스크립트 공통 요구사항
@@ -99,10 +99,11 @@ python -m src.train.train_ae
 | 파일 | 포함 내용 |
 |---|---|
 | `weights/mlp.pth` | model state dict, input dim, class names |
-| `weights/lstm.pth` | model state dict, sequence length, feature dim=`1409`, class names |
-| `weights/autoencoder.pth` | model state dict, input dim, threshold |
+| `weights/lstm.pth` | model state dict, sequence length, input dim=`1409`, class names |
+| `config.WEIGHT_FILES["autoencoder"]` (`weights/autoencoder_best.pth`) | model state dict, input dim, threshold |
+| `config.WEIGHT_FILES["autoencoder_threshold"]` (`weights/threshold.npy`) | Autoencoder reconstruction error threshold |
 
-단순 `state_dict`만 저장해도 실행은 가능하지만, 추론 안정성을 위해 metadata를 함께 저장하는 방식을 권장한다.
+학습 스크립트는 metadata dict 저장을 기본으로 한다. 추론 코드는 기존 단순 `state_dict` weight도 읽을 수 있게 backward compatibility를 유지한다.
 
 ## 8. 예외 처리
 
@@ -117,7 +118,7 @@ python -m src.train.train_ae
 ## 9. 완료 기준
 
 - 각 학습 스크립트가 단독 실행 가능하다.
-- 학습 결과 weight 파일 3개가 `weights/`에 생성된다.
+- 학습 결과 weight 파일 3개와 Autoencoder threshold 파일이 `weights/`에 생성된다.
 - 저장된 weight를 `src/inference/predictor.py`에서 로드할 수 있다.
 - 모델 입력 dim, class 개수, sequence length가 명세와 일치한다.
 - LSTM 학습과 추론이 동일한 피처 순서 `face_xyz_flatten -> ear -> mar -> yaw -> pitch -> roll`를 사용한다.

@@ -18,6 +18,7 @@
 | [05_tray_dashboard_feature_spec.md](05_tray_dashboard_feature_spec.md) | 트레이 앱/대시보드 | 백그라운드 실행, 상태 표시, Tkinter UI |
 | [06_alert_db_feature_spec.md](06_alert_db_feature_spec.md) | 알림/DB 저장 | 경고 발생, 쿨다운, SQLite 이벤트 저장 |
 | [07_config_environment_feature_spec.md](07_config_environment_feature_spec.md) | 설정/환경 검증 | 실행 환경 감지, 경로, 요구사항 검증 |
+| [08_dataloader_training_feature_spec.md](08_dataloader_training_feature_spec.md) | DataLoader 및 학습 파이프라인 | processed 데이터 로딩, batch 구성, 학습 루프, weight 저장 |
 
 ## 공통 용어
 
@@ -36,7 +37,7 @@
 1. `data/raw/`에 직접 수집 데이터와 공개 데이터셋을 모은다.
 2. `src/data/preprocess.py`로 학습 가능한 입력 벡터/시퀀스를 만든다.
 3. `src/train/train_mlp.py`, `src/train/train_lstm.py`, `src/train/train_ae.py`로 모델을 학습한다.
-4. 학습된 모델은 `weights/mlp.pth`, `weights/lstm.pth`, `weights/autoencoder.pth`로 저장한다.
+4. 학습된 모델은 `weights/mlp.pth`, `weights/lstm.pth`, `config.WEIGHT_FILES["autoencoder"]`로 저장하고, Autoencoder threshold는 `config.WEIGHT_FILES["autoencoder_threshold"]`로 별도 저장한다.
 5. `python main.py` 실행 시 앱은 `src/app/tray.py`를 진입점으로 사용한다.
 6. 백그라운드 추론 루프는 단일 웹캠 캡처를 소유하고 `src/utils/mediapipe_utils.py`로 특징을 추출한다.
 7. `src/inference/predictor.py`가 세 모델의 결과를 통합해 사용자 상태를 계산한다.

@@ -19,7 +19,7 @@
 |---|---|
 | 웹캠 프레임 | OpenCV BGR frame |
 | mode | `bg` 또는 `dashboard` |
-| weight 파일 | `weights/mlp.pth`, `weights/lstm.pth`, `weights/autoencoder.pth` |
+| weight 파일 | `weights/mlp.pth`, `weights/lstm.pth`, `config.WEIGHT_FILES["autoencoder"]` (`weights/autoencoder_best.pth`), `config.WEIGHT_FILES["autoencoder_threshold"]` (`weights/threshold.npy`) |
 | 이전 상태 | LSTM sequence buffer, 이벤트별 지속 시간, 마지막 추론 결과 |
 
 ## 4. 출력
