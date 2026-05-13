@@ -145,3 +145,70 @@ dataset = create_dataset("mlp")
 dataset = create_dataset("lstm")
 dataset = create_dataset("ae", split="train")
 ```
+
+
+data/raw/
+    원본 영상 또는 이미지
+          ↓
+  preprocess
+    MediaPipe로 landmark/feature 추출
+    라벨 매핑
+    shape 검증
+          ↓
+  data/processed/
+    X.npy, y.npy 또는 X_train.npy, X_val.npy
+          ↓
+  Dataset
+    processed 파일을 PyTorch Dataset 형태로 감쌈
+          ↓
+  DataLoader
+    batch 단위로 모델에 공급
+          ↓
+  train
+    MLP / LSTM / Autoencoder 학습
+          ↓
+  weights/
+    실시간 추론에서 쓸 .pth 저장
+
+  핵심은 dataset이 학습 자체는 아니고, 전처리된 데이터를 학습 코드가 읽기 쉽게 포장하는 단계입니다.
+
+  모델별로는:
+
+  MLP 거북목
+  data/raw/posture/*.mp4
+  → preprocess_mlp
+  → data/processed/mlp/X.npy     # (N, 99)
+  → data/processed/mlp/y.npy     # (N,)
+  → PostureDataset
+  → train_mlp
+  → weights/mlp.pth
+
+  LSTM 졸음/딴짓
+  data/raw/drowsiness/*.mp4
+  → preprocess_lstm
+  → FaceMesh + EAR + MAR + HeadPose
+  → data/processed/lstm/X.npy    # (N, seq_len, 1409)
+  → data/processed/lstm/y.npy    # (N,)
+  → FocusSequenceDataset
+  → train_lstm
+  → weights/lstm.pth
+
+  Autoencoder 이상 자세
+  data/raw/posture/0_normal/*.mp4
+  → preprocess_ae
+  → 정상 자세 Pose landmark만 추출
+  → data/processed/autoencoder/X_train.npy
+  → data/processed/autoencoder/X_val.npy
+  → AutoencoderDataset
+  → train_ae
+  → weights/autoencoder.pth + threshold
+
+  현재 코드 상태 기준으로는 src/data/preprocess.py가 mlp/lstm/ae/all 전처리 진입점이고, src/data/dataset.py가 모델별 Dataset factory입니다.
+
+  다만 주의할 점이 하나 있습니다. src/train/train_mlp.py와 src/train/train_lstm.py는 아직 실질 구현이 비어 있습니다. src/train/train_ae.py는
+  구현이 있지만 명세의 data/processed/autoencoder/X_train.npy 흐름과 완전히 맞지는 않고, 기본값이 data/raw/normal_poses.npy 쪽을 보고 있어서
+  정리가 필요합니다.
+
+  즉, 설계상 답은:
+
+  raw → preprocess → processed → dataset → dataloader → train → weights → inference
