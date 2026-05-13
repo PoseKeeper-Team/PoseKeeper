@@ -76,7 +76,7 @@ def train(
     # ── 모델 / 옵티마이저 / 손실 ─────────────────────────────────
     model = PoseAutoencoder(input_dim=99, latent_dim=latent_dim).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=1e-5)
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=10, factor=0.5, verbose=True)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=10, factor=0.5)
     criterion = nn.MSELoss()
 
     # ── 학습 루프 ────────────────────────────────────────────────
