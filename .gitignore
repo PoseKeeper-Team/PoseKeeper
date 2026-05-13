@@ -22,7 +22,7 @@ env/
 *.avi
 *.mov
 *.mkv
-
+data/*
 data/*.db
 data/*.db-journal
 data/*.db-wal
