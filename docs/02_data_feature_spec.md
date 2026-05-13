@@ -14,7 +14,10 @@
 | `src/data/preprocess_mlp.py` | MLP용 posture mp4/CSV 전처리 |
 | `src/data/preprocess_lstm.py` | LSTM용 drowsiness mp4/npz 전처리 |
 | `src/data/preprocess_ae.py` | Autoencoder용 정상 자세 mp4/npy 전처리 |
-| `src/data/dataset.py` | PyTorch Dataset / DataLoader 정의 |
+| `src/data/dataset.py` | 모델별 Dataset re-export 및 공통 factory |
+| `src/data/dataset_mlp.py` | MLP용 `PostureDataset` |
+| `src/data/dataset_lstm.py` | LSTM용 `FocusSequenceDataset` |
+| `src/data/dataset_ae.py` | Autoencoder용 `AutoencoderDataset` |
 | `data/raw/` | 원본 데이터 저장 위치 |
 | `data/processed/` | 전처리 결과 저장 위치 |
 

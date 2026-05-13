@@ -2,6 +2,7 @@ from __future__ import annotations
 
 """Autoencoder 이상 자세 탐지 데이터 전처리."""
 
+import argparse
 import logging
 
 import numpy as np
@@ -12,6 +13,7 @@ from src.data.preprocess_common import (
     extract_pose_video_features,
     iter_labeled_videos,
     save_json,
+    setup_logging,
 )
 
 
@@ -135,3 +137,39 @@ def preprocess_ae(
 
     print(f"[전처리 완료] 원본 {len(data)}개 -> 증강 후 {len(augmented)}개")
     print(f"[저장] {out_path}")
+
+
+def main() -> None:
+    """Run AE preprocessing directly with `python -m src.data.preprocess_ae`."""
+    setup_logging()
+
+    parser = argparse.ArgumentParser(description="Autoencoder 이상자세 데이터 전처리")
+    parser.add_argument(
+        "--target-fps",
+        type=int,
+        default=6,
+        help="mp4 분석 시 초당 샘플링할 프레임 수",
+    )
+    parser.add_argument(
+        "--max-frames-per-video",
+        type=int,
+        default=None,
+        help="디버깅용: 영상별 최대 유효 feature 수 제한",
+    )
+    parser.add_argument(
+        "--ae-val-ratio",
+        type=float,
+        default=0.1,
+        help="X_train/X_val 분할 검증 비율",
+    )
+    args = parser.parse_args()
+
+    preprocess_ae(
+        target_fps=args.target_fps,
+        max_frames_per_video=args.max_frames_per_video,
+        val_ratio=args.ae_val_ratio,
+    )
+
+
+if __name__ == "__main__":
+    main()

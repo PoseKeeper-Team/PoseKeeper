@@ -80,3 +80,68 @@ Google Drive는 원본 영상 공유용으로만 사용한다. 각자 필요한 
 - 기능 계약 변경 시 먼저 `docs/`와 `config.py`를 같이 갱신한다.
 - README보다 상세한 구현 범위와 입출력 계약은 `docs/`를 기준으로 본다.
 - 데이터와 weight 파일은 GitHub에 커밋하지 않고 별도 저장소로 공유한다.
+
+## 모델별 전처리/Dataset 사용
+
+### MLP 담당자
+
+```powershell
+python -m src.data.preprocess_mlp
+```
+
+```python
+from torch.utils.data import DataLoader
+from src.data.dataset_mlp import PostureDataset
+
+dataset = PostureDataset()
+loader = DataLoader(dataset, batch_size=64, shuffle=True)
+features, labels = next(iter(loader))
+```
+
+저장/로드 경로: `data/processed/mlp/X.npy`, `data/processed/mlp/y.npy`
+
+### LSTM 담당자
+
+```powershell
+python -m src.data.preprocess_lstm
+```
+
+```python
+from torch.utils.data import DataLoader
+from src.data.dataset_lstm import FocusSequenceDataset
+
+dataset = FocusSequenceDataset()
+loader = DataLoader(dataset, batch_size=32, shuffle=True)
+sequences, labels = next(iter(loader))
+```
+
+저장/로드 경로: `data/processed/lstm/X.npy`, `data/processed/lstm/y.npy`
+
+### Autoencoder 담당자
+
+```powershell
+python -m src.data.preprocess_ae
+```
+
+```python
+from torch.utils.data import DataLoader
+from src.data.dataset_ae import AutoencoderDataset
+
+train_dataset = AutoencoderDataset(split="train")
+val_dataset = AutoencoderDataset(split="val")
+train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
+val_loader = DataLoader(val_dataset, batch_size=64, shuffle=False)
+features, targets = next(iter(train_loader))
+```
+
+저장/로드 경로: `data/processed/autoencoder/X_train.npy`, `data/processed/autoencoder/X_val.npy`
+
+공통 방식:
+
+```python
+from src.data.dataset import create_dataset
+
+dataset = create_dataset("mlp")
+dataset = create_dataset("lstm")
+dataset = create_dataset("ae", split="train")
+```

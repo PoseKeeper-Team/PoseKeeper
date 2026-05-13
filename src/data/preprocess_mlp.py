@@ -2,6 +2,7 @@ from __future__ import annotations
 
 """MLP 거북목 분류 데이터 전처리."""
 
+import argparse
 import logging
 
 import numpy as np
@@ -13,6 +14,7 @@ from src.data.preprocess_common import (
     extract_pose_video_features,
     iter_labeled_videos,
     save_json,
+    setup_logging,
 )
 
 
@@ -131,3 +133,32 @@ def preprocess_mlp(
         print(f"[MLP] Saved to {out_dir}")
     except Exception as e:
         print(f"[MLP] Preprocessing failed: {e}")
+
+
+def main() -> None:
+    """Run MLP preprocessing directly with `python -m src.data.preprocess_mlp`."""
+    setup_logging()
+
+    parser = argparse.ArgumentParser(description="MLP 거북목 데이터 전처리")
+    parser.add_argument(
+        "--target-fps",
+        type=int,
+        default=6,
+        help="mp4 분석 시 초당 샘플링할 프레임 수",
+    )
+    parser.add_argument(
+        "--max-frames-per-video",
+        type=int,
+        default=None,
+        help="디버깅용: 영상별 최대 유효 feature 수 제한",
+    )
+    args = parser.parse_args()
+
+    preprocess_mlp(
+        target_fps=args.target_fps,
+        max_frames_per_video=args.max_frames_per_video,
+    )
+
+
+if __name__ == "__main__":
+    main()

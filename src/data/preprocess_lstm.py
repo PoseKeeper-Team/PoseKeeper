@@ -2,6 +2,7 @@ from __future__ import annotations
 
 """LSTM 집중도 분류 데이터 전처리."""
 
+import argparse
 import logging
 
 import numpy as np
@@ -12,6 +13,7 @@ from src.data.preprocess_common import (
     extract_lstm_video_features,
     iter_labeled_videos,
     save_json,
+    setup_logging,
 )
 
 
@@ -202,3 +204,46 @@ def preprocess_lstm_focus(
     print(f"X shape: {X_arr.shape}")
     print(f"y shape: {y_arr.shape}")
     print(f"저장 위치: {out_dir}")
+
+
+def main() -> None:
+    """Run LSTM preprocessing directly with `python -m src.data.preprocess_lstm`."""
+    setup_logging()
+
+    parser = argparse.ArgumentParser(description="LSTM 집중도 데이터 전처리")
+    parser.add_argument(
+        "--seq-len",
+        type=int,
+        default=config.LSTM_SEQUENCE_LENGTH,
+        help="LSTM 시퀀스 길이",
+    )
+    parser.add_argument(
+        "--stride",
+        type=int,
+        default=5,
+        help="LSTM 시퀀스를 자를 때 이동 간격",
+    )
+    parser.add_argument(
+        "--target-fps",
+        type=int,
+        default=6,
+        help="mp4 분석 시 초당 샘플링할 프레임 수",
+    )
+    parser.add_argument(
+        "--max-frames-per-video",
+        type=int,
+        default=None,
+        help="디버깅용: 영상별 최대 유효 feature 수 제한",
+    )
+    args = parser.parse_args()
+
+    preprocess_lstm_focus(
+        seq_len=args.seq_len,
+        stride=args.stride,
+        target_fps=args.target_fps,
+        max_frames_per_video=args.max_frames_per_video,
+    )
+
+
+if __name__ == "__main__":
+    main()

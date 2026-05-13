@@ -12,7 +12,11 @@ src/data/
 ├── preprocess_lstm.py       # LSTM용 전처리 (집중도)
 ├── preprocess_ae.py         # Autoencoder용 전처리 (이상자세)
 ├── preprocess_common.py     # 공통 유틸 (MP4 읽기, feature 추출)
-└── preprocess.py            # 메인 CLI 진입점
+├── preprocess.py            # 메인 CLI 진입점
+├── dataset_mlp.py           # MLP용 Dataset
+├── dataset_lstm.py          # LSTM용 Dataset
+├── dataset_ae.py            # Autoencoder용 Dataset
+└── dataset.py               # Dataset 공통 진입점
 ```
 
 ---
@@ -52,10 +56,15 @@ data/
 # 전체 전처리 (모든 모델)
 python -m src.data.preprocess --task all
 
-# 또는 모델별 개별 실행
+# 통합 CLI에서 모델별 개별 실행
 python -m src.data.preprocess --task mlp
 python -m src.data.preprocess --task lstm
 python -m src.data.preprocess --task ae
+
+# 담당 모듈을 직접 실행해도 동일하게 동작
+python -m src.data.preprocess_mlp
+python -m src.data.preprocess_lstm
+python -m src.data.preprocess_ae
 ```
 
 ### 2단계: 결과 확인
@@ -112,12 +121,14 @@ data/raw/posture/
 ```bash
 # 기본 설정 (target_fps=6)
 python -m src.data.preprocess --task mlp
+# 또는
+python -m src.data.preprocess_mlp
 
 # 커스텀 FPS (영상 재샘플링 속도)
-python -m src.data.preprocess --task mlp --target-fps 10
+python -m src.data.preprocess_mlp --target-fps 10
 
 # 영상당 최대 프레임 제한 (메모리 부족 시)
-python -m src.data.preprocess --task mlp --max-frames-per-video 1000
+python -m src.data.preprocess_mlp --max-frames-per-video 1000
 ```
 
 #### 📤 출력
@@ -207,16 +218,18 @@ data/raw/drowsiness/
 ```bash
 # 기본 설정 (seq_len=30, stride=5, target_fps=6)
 python -m src.data.preprocess --task lstm
+# 또는
+python -m src.data.preprocess_lstm
 
 # 커스텀 시퀀스 길이 (시간 window 변경)
 # seq_len=60은 약 10초 (6fps×60/6fps)
-python -m src.data.preprocess --task lstm --seq-len 60 --stride 10
+python -m src.data.preprocess_lstm --seq-len 60 --stride 10
 
 # 목표 FPS 변경
-python -m src.data.preprocess --task lstm --target-fps 10
+python -m src.data.preprocess_lstm --target-fps 10
 
 # 메모리 제약 시 최대 프레임 제한
-python -m src.data.preprocess --task lstm --max-frames-per-video 2000
+python -m src.data.preprocess_lstm --max-frames-per-video 2000
 ```
 
 #### 📤 출력
@@ -317,12 +330,14 @@ data/raw/posture/
 ```bash
 # 기본 설정
 python -m src.data.preprocess --task ae
+# 또는
+python -m src.data.preprocess_ae
 
 # 커스텀 FPS
-python -m src.data.preprocess --task ae --target-fps 10
+python -m src.data.preprocess_ae --target-fps 10
 
 # train/val 비율 변경 (기본 90%/10%)
-python -m src.data.preprocess --task ae --ae-val-ratio 0.2
+python -m src.data.preprocess_ae --ae-val-ratio 0.2
 ```
 
 #### 📤 출력
@@ -389,6 +404,14 @@ data/processed/autoencoder/
 
 ```bash
 python -m src.data.preprocess --task {mlp|lstm|ae|all} [options]
+```
+
+모델 담당자가 자기 모듈만 실행할 때는 아래 명령을 써도 됩니다.
+
+```bash
+python -m src.data.preprocess_mlp [options]
+python -m src.data.preprocess_lstm [options]
+python -m src.data.preprocess_ae [options]
 ```
 
 | 옵션 | 기본값 | 설명 |
@@ -621,6 +644,46 @@ preprocess_lstm_focus(seq_len=30, stride=5, target_fps=6)
 
 # AE 전처리
 preprocess_ae(target_fps=6, val_ratio=0.1)
+```
+
+---
+
+## 🧩 Dataset 사용
+
+전처리 결과는 모델별 Dataset으로 바로 불러올 수 있습니다.
+
+```python
+from src.data.dataset_mlp import PostureDataset
+from src.data.dataset_lstm import FocusSequenceDataset
+from src.data.dataset_ae import AutoencoderDataset
+
+mlp_dataset = PostureDataset()                 # data/processed/mlp
+lstm_dataset = FocusSequenceDataset()          # data/processed/lstm
+ae_train_dataset = AutoencoderDataset(split="train")
+ae_val_dataset = AutoencoderDataset(split="val")
+```
+
+공통 진입점을 쓰면 학습 스크립트에서 모델 이름만 바꿔 사용할 수 있습니다.
+
+```python
+from src.data.dataset import create_dataset
+
+mlp_dataset = create_dataset("mlp")
+lstm_dataset = create_dataset("lstm")
+ae_train_dataset = create_dataset("ae", split="train")
+ae_val_dataset = create_dataset("ae", split="val")
+```
+
+DataLoader 연결 예시는 다음과 같습니다.
+
+```python
+from torch.utils.data import DataLoader
+from src.data.dataset import create_dataset
+
+dataset = create_dataset("mlp")
+loader = DataLoader(dataset, batch_size=64, shuffle=True)
+
+features, labels = next(iter(loader))
 ```
 
 ---
