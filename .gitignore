@@ -17,8 +17,7 @@ env/
 .DS_Store
 
 # Project artifacts (do not commit raw data or trained weights)
-data/raw/
-data/processed/
+
 *.mp4
 *.avi
 *.mov
