@@ -9,7 +9,11 @@
 | 파일 | 역할 |
 |---|---|
 | `src/data/collect.py` | 웹캠 기반 데이터 수집 및 라벨링 도구 |
-| `src/data/preprocess.py` | raw 데이터를 processed 데이터로 변환 |
+| `src/data/preprocess.py` | 모델별 전처리 CLI 진입점 |
+| `src/data/preprocess_common.py` | 로컬 영상 순회, `cv2.VideoCapture`, 공통 저장 helper |
+| `src/data/preprocess_mlp.py` | MLP용 posture mp4/CSV 전처리 |
+| `src/data/preprocess_lstm.py` | LSTM용 drowsiness mp4/npz 전처리 |
+| `src/data/preprocess_ae.py` | Autoencoder용 정상 자세 mp4/npy 전처리 |
 | `src/data/dataset.py` | PyTorch Dataset / DataLoader 정의 |
 | `data/raw/` | 원본 데이터 저장 위치 |
 | `data/processed/` | 전처리 결과 저장 위치 |
@@ -37,6 +41,20 @@ data/
 
 공식 raw 데이터의 source of truth는 이미지/영상 원본이다. landmark는 `preprocess.py`가 생성하는 파생 산출물로 취급하며, 필요할 경우 캐시로 저장할 수는 있지만 raw 데이터의 정식 포맷으로 간주하지 않는다.
 
+Google Drive는 원본 영상 공유 저장소로만 사용한다. 각 팀원은 Drive에서 필요한 영상을 직접 로컬로 다운로드한 뒤 위 `data/raw/` 구조에 배치한다. 전처리 코드는 Google Drive API나 `collection://` 같은 원격 경로를 직접 읽지 않고, 로컬 파일 경로만 입력으로 사용한다.
+
+drowsiness 영상 배치 예시는 다음과 같다.
+
+```text
+data/raw/drowsiness/
+  0_normal/
+    normal_20260513_001.mp4
+  1_drowsy/
+    drowsy_20260513_001.mp4
+  2_distracted/
+    distracted_20260513_001.mp4
+```
+
 ## 4. 라벨 정의
 
 ### 거북목 라벨
@@ -63,6 +81,7 @@ data/
 - 수집 라벨: posture 또는 drowsiness 기준 라벨
 - 저장 간격: 프레임 단위 또는 초 단위
 - 해상도: `config.TRAIN_CAPTURE_RESOLUTION`
+- 공유 영상 데이터: Google Drive에서 각자 다운로드한 로컬 `.mp4` 파일
 
 ### 출력
 

@@ -61,6 +61,8 @@ data/
 
 기존 한글 폴더 데이터가 있더라도 새 데이터는 위 영문 구조로만 추가한다. 한글 폴더 호환은 필요하면 `preprocess.py`에서만 일시적으로 처리한다.
 
+Google Drive는 원본 영상 공유용으로만 사용한다. 각자 필요한 영상을 로컬로 다운로드한 뒤 `data/raw/drowsiness/{label}/` 아래에 배치하고, 전처리/학습 코드는 로컬 `data/raw/` 경로만 기준으로 실행한다. 예: `data/raw/drowsiness/1_drowsy/drowsy_20260513_001.mp4`
+
 ## 실행 기준
 
 - 환경 검증: `python test_env.py`
