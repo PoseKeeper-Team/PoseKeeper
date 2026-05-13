@@ -209,7 +209,7 @@ data/raw/drowsiness/
 ```
 
 **라벨 폴더명 옵션**:
-- `0_normal`, `normal`, `focused`
+- `0_normal`, `normal`, `focused` (`focused`는 입력 폴더 alias이며 저장 라벨명은 `normal`로 정규화)
 - `1_drowsy`, `drowsy`
 - `2_distracted`, `distracted`
 
