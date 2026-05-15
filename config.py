@@ -44,8 +44,8 @@ DISTRACTION_THRESHOLD_SEC: float = 10.0
 ALERT_COOLDOWN_SEC: float = 60.0
 EAR_THRESHOLD: float = 0.20
 MAR_THRESHOLD: float = 0.60
-HEADPOSE_YAW_THRESHOLD_DEG: float = 20.0
-HEADPOSE_PITCH_THRESHOLD_DEG: float = 15.0
+HEADPOSE_YAW_THRESHOLD_DEG: float = 35.0
+HEADPOSE_PITCH_THRESHOLD_DEG: float = 25.0
 
 
 # --- Model input dims (locked by MediaPipe) ---------------------------
