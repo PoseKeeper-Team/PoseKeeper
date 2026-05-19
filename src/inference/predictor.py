@@ -222,6 +222,17 @@ class PosePredictor:
         else:
             self._event_timers.pop("anomaly_posture", None)
 
+    def _event_threshold(self, event: str) -> float:
+        if event == "turtle_neck":
+            return config.TURTLE_NECK_THRESHOLD_SEC
+        if event == "drowsy":
+            return config.DROWSINESS_THRESHOLD_SEC
+        if event == "distracted":
+            return config.DISTRACTION_THRESHOLD_SEC
+        if event == "anomaly_posture":
+            return config.TURTLE_NECK_THRESHOLD_SEC
+        return 0.0
+
     def _calc_events_and_severity(
         self,
         posture_label: str | None,
@@ -230,8 +241,15 @@ class PosePredictor:
         events: list[str] = []
         severity: dict[str, str] = {}
         for event, start in self._event_timers.items():
-            events.append(event)
-            severity[event] = self._get_severity(event, now - start, posture_label)
+            elapsed = now - start
+
+            # 조건이 잠깐 켜졌다고 바로 이벤트로 띄우지 않고, 설정된 시간 이상 지속됐을 때만 이벤트로 표시한다.
+            if elapsed < self._event_threshold(event):
+                continue
+
+        events.append(event)
+        severity[event] = self._get_severity(event, elapsed, posture_label)
+        
         return events, severity
 
     @staticmethod
