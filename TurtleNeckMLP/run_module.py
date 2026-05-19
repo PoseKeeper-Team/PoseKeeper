@@ -15,20 +15,35 @@ from collect import collect_pose_data
 from train_mlp import train_model
 from src.data.preprocess import preprocess_mlp
 import config
+from test_realtime import run_realtime_inference
 
 def check_data_status(data_dir):
-    """전처리된 데이터의 라벨별 개수를 확인합니다."""
+    """CSV 원본 데이터와 전처리된 NPY 데이터의 개수를 확인합니다."""
+    # 1. RAW CSV 확인
+    PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    RAW_DATA_PATH = os.path.join(PROJECT_ROOT, "data", "raw", "mlp_collected_data.csv")
+    
+    print("\n" + "="*30)
+    print("   [ 데이터 누적 현황 ]")
+    if os.path.exists(RAW_DATA_PATH):
+        with open(RAW_DATA_PATH, 'r') as f:
+            lines = f.readlines()
+            # 헤더를 제외한 데이터 개수 (첫 줄이 숫자나 헤더일 수 있음)
+            print(f" 현재 저장된 원본 데이터(CSV): {len(lines)}개")
+    else:
+        print(" 현재 저장된 원본 데이터가 없습니다.")
+
+    # 2. 전처리된 NPY 확인
     y_path = os.path.join(data_dir, "y.npy")
     if not os.path.exists(y_path):
-        print(f"\n[경고] 전처리된 파일이 없습니다: {y_path}")
-        print("4번 메뉴를 실행하여 전처리를 먼저 진행하세요.")
+        print("\n[알림] 전처리된 파일(.npy)이 없습니다. 4번을 실행하세요.")
+        print("="*30)
         return
 
     y = np.load(y_path)
-    unique, counts = np.unique(y, return_counts=True)
-    print("\n" + "="*30)
-    print("   [ 데이터 라벨링 현황 ]")
     label_map = {0: "정상(Normal)", 1: "거북목(Turtle)", 2: "심한 거북목(Severe)"}
+    unique, counts = np.unique(y, return_counts=True)
+    print("\n [ 전처리 완료된 라벨별 분포 ]")
     for u, c in zip(unique, counts):
         print(f" 라벨 {u} ({label_map.get(u, 'Unknown')}): {c}개")
     print("="*30)
@@ -61,7 +76,8 @@ if __name__ == "__main__":
         print("4. 데이터 전처리 (CSV -> NPY)")
         print("5. 데이터 수집 현황 확인")
         print("6. 모델 학습 (Processed NPY -> .pth)")
-        print("7. 종료")
+        print("7. 실시간 카메라 감지 테스트")
+        print("8. 종료")
         
         menu = input("선택: ")
         
@@ -81,6 +97,8 @@ if __name__ == "__main__":
         elif menu == '6':
             train_model(data_path=str(PROCESSED_DIR), weight_path=MODEL_PATH)
         elif menu == '7':
+            run_realtime_inference()
+        elif menu == '8':
             print("프로그램을 종료합니다.")
             break
         else:
