@@ -23,25 +23,28 @@ def train_model(data_path="data/processed/mlp", weight_path="weights/mlp.pth"):
     train_x, val_x = X[indices[:split]], X[indices[split:]]
     train_y, val_y = y[indices[:split]], y[indices[split:]]
 
-    config = {'batch_size': 32, 'lr': 0.001, 'epochs': 50}
+    hyper_params = {'batch_size': 32, 'lr': 0.001, 'epochs': 50}
 
     # 1. 데이터셋 준비 (Numpy -> Tensor)
-    train_dataset = TensorDataset(
-        torch.FloatTensor(train_x), 
-        torch.LongTensor(train_y)  # CrossEntropyLoss는 Long 타입을 사용
-    )
-    train_loader = DataLoader(train_dataset, batch_size=config['batch_size'], shuffle=True)
+    train_dataset = TensorDataset(torch.FloatTensor(train_x), torch.LongTensor(train_y))
+    val_dataset = TensorDataset(torch.FloatTensor(val_x), torch.LongTensor(val_y))
+
+    train_loader = DataLoader(train_dataset, batch_size=hyper_params['batch_size'], shuffle=True)
+    val_loader = DataLoader(val_dataset, batch_size=hyper_params['batch_size'], shuffle=False)
 
     # 2. 모델 및 최적화 설정
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = TurtleNeckMLP(input_dim=99, num_classes=3).to(device)
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=config['lr'])
+    optimizer = optim.Adam(model.parameters(), lr=hyper_params['lr'])
+
+    best_val_acc = 0.0
+    print(f"\n[학습 시작] Device: {device} | Epochs: {hyper_params['epochs']}")
 
     # 3. 학습 루프
-    for epoch in range(config['epochs']):
+    for epoch in range(hyper_params['epochs']):
         model.train()
-        total_loss = 0
+        train_loss = 0
         for batch_x, batch_y in train_loader:
             batch_x, batch_y = batch_x.to(device), batch_y.to(device)
             
@@ -51,25 +54,49 @@ def train_model(data_path="data/processed/mlp", weight_path="weights/mlp.pth"):
             loss.backward()
             optimizer.step()
             
-            total_loss += loss.item()
-        
-        print(f"Epoch [{epoch+1}/{config['epochs']}], Loss: {total_loss/len(train_loader):.4f}")
+            train_loss += loss.item()
 
-    # 4. 검증 정확도 확인
-    model.eval()
-    with torch.no_grad():
-        val_x_tensor = torch.FloatTensor(val_x).to(device)
-        val_y_tensor = torch.LongTensor(val_y).to(device)
-        outputs = model(val_x_tensor)
-        _, predicted = torch.max(outputs.data, 1)
+        # 4. 에폭별 검증 수행
+        model.eval()
+        val_loss = 0
+        correct = 0
+        total = 0
+        with torch.no_grad():
+            for batch_x, batch_y in val_loader:
+                batch_x, batch_y = batch_x.to(device), batch_y.to(device)
+                outputs = model(batch_x)
+                loss = criterion(outputs, batch_y)
+                val_loss += loss.item()
+                
+                _, predicted = torch.max(outputs.data, 1)
+                total += batch_y.size(0)
+                correct += (predicted == batch_y).sum().item()
         
-        total = val_y_tensor.size(0)
-        correct = (predicted == val_y_tensor).sum().item()
-        print(f"\n최종 검증 정확도: {100 * correct / total:.2f}%")
+        avg_train_loss = train_loss / len(train_loader)
+        avg_val_loss = val_loss / len(val_loader)
+        val_acc = 100 * correct / total
+        
+        # 최고 성능 갱신 시 모델 저장
+        is_best = val_acc > best_val_acc
+        if is_best:
+            best_val_acc = val_acc
+            save_data = {
+                "model_state_dict": model.state_dict(),
+                "model_name": "mlp",
+                "input_dim": 99,
+                "num_classes": 3,
+                "class_names": ["normal", "turtle_neck", "severe_turtle_neck"],
+                "best_val_accuracy": best_val_acc,
+                "config": hyper_params
+            }
+            torch.save(save_data, weight_path)
+        
+        print(f"Epoch [{epoch+1:2d}/{hyper_params['epochs']}] "
+              f"Loss: {avg_train_loss:.4f} | Val Loss: {avg_val_loss:.4f} | "
+              f"Val Acc: {val_acc:5.2f}% {'[Best!]' if is_best else ''}")
 
-    # 4. 모델 저장
-    torch.save(model.state_dict(), weight_path)
-    print(f"Model saved to {weight_path}")
+    print(f"\n[학습 종료] 최고 검증 정확도: {best_val_acc:.2f}%")
+    print(f"모델 가중치가 '{weight_path}' 에 저장되었습니다.")
 
 if __name__ == "__main__":
     # 예시 설정값

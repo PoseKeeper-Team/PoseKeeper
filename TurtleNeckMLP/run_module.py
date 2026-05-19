@@ -2,6 +2,8 @@ import platform
 import ssl
 import sys
 import os
+import os
+import numpy as np
 
 # macOS OpenCV/MediaPipe 충돌 및 Fork 안전성 문제 해결
 os.environ["OBJC_DISABLE_INITIALIZE_FORK_SAFETY"] = "YES"
@@ -14,15 +16,42 @@ from train_mlp import train_model
 from src.data.preprocess import preprocess_mlp
 import config
 
+def check_data_status(data_dir):
+    """전처리된 데이터의 라벨별 개수를 확인합니다."""
+    y_path = os.path.join(data_dir, "y.npy")
+    if not os.path.exists(y_path):
+        print(f"\n[경고] 전처리된 파일이 없습니다: {y_path}")
+        print("4번 메뉴를 실행하여 전처리를 먼저 진행하세요.")
+        return
+
+    y = np.load(y_path)
+    unique, counts = np.unique(y, return_counts=True)
+    print("\n" + "="*30)
+    print("   [ 데이터 라벨링 현황 ]")
+    label_map = {0: "정상(Normal)", 1: "거북목(Turtle)", 2: "심한 거북목(Severe)"}
+    for u, c in zip(unique, counts):
+        print(f" 라벨 {u} ({label_map.get(u, 'Unknown')}): {c}개")
+    print("="*30)
+
 if __name__ == "__main__":
+    # 프로젝트 루트 경로 설정 (run_module.py는 TurtleNeckMLP 디렉토리 안에 있으므로 두 번 상위로 이동)
+    PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
     # macOS에서 MediaPipe 모델 다운로드 시 SSL 오류 방지
     if platform.system() == "Darwin":
         ssl._create_default_https_context = ssl._create_unverified_context
 
-    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    RAW_DATA_PATH = os.path.join(BASE_DIR, "data.csv")
-    MODEL_PATH = os.path.join(BASE_DIR, "turtle_neck_mlp.pth")
+    # 데이터 수집 CSV 파일 경로 (프로젝트 루트의 data/raw 디렉토리 내에 저장)
+    # collect.py의 기본 save_path와 충돌하지 않도록 파일명을 명확히 합니다.
+    RAW_DATA_PATH = os.path.join(PROJECT_ROOT, "data", "raw", "mlp_collected_data.csv")
+    os.makedirs(os.path.dirname(RAW_DATA_PATH), exist_ok=True)
+
+    # 모델 저장 경로 (프로젝트 루트의 weights 디렉토리 내에 저장)
+    MODEL_PATH = os.path.join(PROJECT_ROOT, "weights", "mlp.pth")
+    os.makedirs(os.path.dirname(MODEL_PATH), exist_ok=True) # weights 디렉토리가 없으면 생성
+
     PROCESSED_DIR = config.PATHS["processed"] / "mlp"
+    os.makedirs(PROCESSED_DIR, exist_ok=True) # processed/mlp 디렉토리가 없으면 생성
 
     while True:
         print("\n--- Turtle Neck MLP Module ---")
@@ -30,8 +59,9 @@ if __name__ == "__main__":
         print("2. 거북목 자세 데이터 수집 (Label 1)")
         print("3. 심한 거북목 자세 데이터 수집 (Label 2)")
         print("4. 데이터 전처리 (CSV -> NPY)")
-        print("5. 모델 학습 (Processed NPY -> .pth)")
-        print("6. 종료")
+        print("5. 데이터 수집 현황 확인")
+        print("6. 모델 학습 (Processed NPY -> .pth)")
+        print("7. 종료")
         
         menu = input("선택: ")
         
@@ -47,8 +77,10 @@ if __name__ == "__main__":
         elif menu == '4':
             preprocess_mlp()
         elif menu == '5':
-            train_model(data_path=str(PROCESSED_DIR), weight_path=MODEL_PATH)
+            check_data_status(str(PROCESSED_DIR))
         elif menu == '6':
+            train_model(data_path=str(PROCESSED_DIR), weight_path=MODEL_PATH)
+        elif menu == '7':
             print("프로그램을 종료합니다.")
             break
         else:
