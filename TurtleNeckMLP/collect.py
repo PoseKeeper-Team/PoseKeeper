@@ -19,11 +19,24 @@ def collect_pose_data(label: int, num_samples: int = 500, save_path: str = "data
     cap = cv2.VideoCapture(0)
     samples = []
     count = 0
+    
+    # 윈도우 생성 및 초기화
+    cv2.namedWindow("Data Collection")
 
     print(f"라벨 {label} 데이터 수집 시작... (목표: {num_samples}개)")
-    print("화면을 확인하며 자세를 유지하세요. 'q'를 누르면 중단됩니다.")
+    print("준비 시간 3초를 드립니다. 화면을 보고 자세를 잡으세요.")
 
     try:
+        # 수집 시작 전 카운트다운 (3초)
+        for i in range(3, 0, -1):
+            ret, frame = cap.read()
+            if not ret: break
+            display_frame = cv2.flip(frame, 1) # 거울 모드 시각화
+            cv2.putText(display_frame, f"Ready in {i}...", (150, 250), 
+                        cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 255), 3)
+            cv2.imshow("Data Collection", display_frame)
+            cv2.waitKey(1000)
+
         while count < num_samples:
             ret, frame = cap.read()
             if not ret:
