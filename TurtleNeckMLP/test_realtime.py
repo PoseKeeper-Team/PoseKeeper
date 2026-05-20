@@ -36,6 +36,7 @@ def run_realtime_inference():
 
     # 3. MediaPipe 및 카메라 설정
     mp_pose = mp.solutions.pose
+    mp_drawing_styles = mp.solutions.drawing_styles
     pose = mp_pose.Pose(static_image_mode=False, min_detection_confidence=0.5, min_tracking_confidence=0.5)
     mp_drawing = mp.solutions.drawing_utils
     
@@ -77,8 +78,18 @@ def run_realtime_inference():
             else: # Severe
                 color = (0, 0, 255)   # Red
 
-            # 스켈레톤 그리기
-            mp_drawing.draw_landmarks(image, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
+            # 랜드마크 및 스켈레톤 그리기 (더 선명한 스타일 적용)
+            mp_drawing.draw_landmarks(
+                image,
+                results.pose_landmarks,
+                mp_pose.POSE_CONNECTIONS,
+                landmark_drawing_spec=mp_drawing_styles.get_default_pose_landmarks_style())
+
+            # 각 포인트 옆에 인덱스 번호(0~32) 출력
+            for idx, landmark in enumerate(results.pose_landmarks.landmark):
+                ih, iw, _ = image.shape
+                x, y = int(landmark.x * iw), int(landmark.y * ih)
+                cv2.putText(image, str(idx), (x, y), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1)
 
         # 화면에 결과 출력
         cv2.putText(image, f"Status: {status_text}", (10, 50), 

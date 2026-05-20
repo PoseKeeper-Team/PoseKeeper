@@ -43,6 +43,7 @@ class PosePredictor:
         self._loaded = False
         self._lstm_buffer: deque[np.ndarray] = deque(maxlen=config.LSTM_SEQUENCE_LENGTH)
         self._event_timers: dict[str, float] = {}
+        self._calibration_pose: np.ndarray | None = None  # 캘리브레이션 기준 포즈
         self._last_result: dict | None = None
 
     def reset(self) -> None:
@@ -51,6 +52,15 @@ class PosePredictor:
         self._event_timers.clear()
         self._last_result = None
         logger.info("PosePredictor reset")
+
+    def calibrate(self, frame: np.ndarray) -> bool:
+        """현재 프레임의 포즈를 '정상 자세'의 기준으로 저장합니다."""
+        pose_vec, _ = extract_pose_landmarks(frame, mode="dashboard")
+        if pose_vec is not None:
+            self._calibration_pose = pose_vec
+            logger.info("Calibration successful")
+            return True
+        return False
 
     def _ensure_loaded(self) -> None:
         """첫 호출 시 1회만 모델을 로드한다. 실패해도 앱을 중단하지 않는다."""
@@ -308,7 +318,15 @@ class PosePredictor:
         posture_confidence: float | None = None
         if pose_vec is not None and self._mlp_model is not None:
             try:
-                x = torch.tensor(pose_vec, dtype=torch.float32).unsqueeze(0).to(config.DEVICE)
+                # 캘리브레이션 데이터가 있다면 현재 포즈에서 기준 포즈를 뺀 '변화량'을 사용하거나,
+                # 기준점을 맞추는 보정 로직을 넣을 수 있습니다.
+                input_vec = pose_vec
+                if self._calibration_pose is not None:
+                    # 단순 차이(Delta)를 입력으로 쓰려면 모델 재학습이 필요하므로,
+                    # 여기서는 '기준점(어깨 중심) 이동 보정' 정도를 적용할 수 있습니다.
+                    pass 
+
+                x = torch.tensor(input_vec, dtype=torch.float32).unsqueeze(0).to(config.DEVICE)
                 with torch.no_grad():
                     logits = self._mlp_model(x)  # type: ignore[operator]
                 probs = torch.softmax(logits, dim=1)[0]

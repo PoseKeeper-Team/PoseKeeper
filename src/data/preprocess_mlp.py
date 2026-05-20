@@ -98,7 +98,7 @@ def preprocess_mlp(
         logger.info("[MLP] 저장 완료: X=%s y=%s out=%s", X_arr.shape, y_arr.shape, out_dir)
         return
 
-    raw_path = config.PROJECT_ROOT / "TurtleNeckMLP" / "data.csv"
+    raw_path = config.PROJECT_ROOT / "data" / "raw" / "data.csv"
     if not raw_path.exists():
         print(f"[FAIL] Raw data not found at {raw_path}")
         return
