@@ -74,9 +74,15 @@ class PosePredictor:
             path = config.WEIGHT_FILES["mlp"]
             if path.exists():
                 self._mlp_model = PoseMLP(input_dim=config.POSE_LANDMARK_DIM, num_classes=3)
-                self._mlp_model.load_state_dict(  # type: ignore[union-attr]
-                    torch.load(path, map_location=config.DEVICE, weights_only=True)
-                )
+                
+                # 학습 시 딕셔너리 형태로 저장하므로, 해당 키를 찾아 로드함
+                checkpoint = torch.load(path, map_location=config.DEVICE, weights_only=False)
+                if isinstance(checkpoint, dict) and "model_state_dict" in checkpoint:
+                    self._mlp_model.load_state_dict(checkpoint["model_state_dict"]) # type: ignore[union-attr]
+                    logger.info("MLP dictionary format loaded. Best Acc: %.2f%%", checkpoint.get("best_val_accuracy", 0))
+                else:
+                    self._mlp_model.load_state_dict(checkpoint) # type: ignore[union-attr]
+                
                 self._mlp_model.to(config.DEVICE)  # type: ignore[union-attr]
                 self._mlp_model.eval()  # type: ignore[union-attr]
                 logger.info("MLP loaded: %s", path)
