@@ -23,7 +23,7 @@ import numpy as np
 
 import config
 from src.app.alert import AlertManager
-from src.inference.predictor import predict
+from src.inference.predictor import predict, get_predictor
 from src.utils.db import close_session, flush_score_samples, init_db, open_session
 
 logger = logging.getLogger(__name__)
@@ -62,6 +62,7 @@ class SharedState:
     running: bool = True
     camera_ok: bool = False
     camera_retry: bool = False
+    calibrate_request: bool = False
     latest_frame: np.ndarray | None = None
     latest_result: dict | None = None
     _lock: threading.Lock = field(
@@ -125,6 +126,11 @@ def inference_loop(
                 logger.warning("웹캠 신호 끊김 감지 — 대시보드에서 재시도 가능")
             time.sleep(0.1)
             continue
+
+        if state.calibrate_request:
+            get_predictor().calibrate(frame)
+            state.calibrate_request = False
+            logger.info("실시간 캘리브레이션 완료")
 
         consecutive_fail = 0
         frame_count += 1

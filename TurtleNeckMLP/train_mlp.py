@@ -55,6 +55,9 @@ def train_model(data_path="data/processed", weight_path="weights/mlp.pth"):
         'epochs': 100,         # 더 충분히 학습하도록 증가
         'weight_decay': 1e-4   # 과적합 방지를 위한 가중치 감쇠
     }
+    
+    patience = 15              # 성능 향상이 없는 경우 기다릴 에폭 수
+    no_improve_epochs = 0
 
     # 1. 데이터셋 준비 (학습셋에만 증강 적용)
     train_dataset = AugmentedPoseDataset(train_x, train_y, augment=True)
@@ -116,6 +119,7 @@ def train_model(data_path="data/processed", weight_path="weights/mlp.pth"):
         # 최고 성능 갱신 시 모델 저장
         is_best = val_acc > best_val_acc
         if is_best:
+            no_improve_epochs = 0
             best_val_acc = val_acc
             save_data = {
                 "model_state_dict": model.state_dict(),
@@ -127,10 +131,17 @@ def train_model(data_path="data/processed", weight_path="weights/mlp.pth"):
                 "config": hyper_params
             }
             torch.save(save_data, weight_path)
+        else:
+            no_improve_epochs += 1
         
         print(f"Epoch [{epoch+1:2d}/{hyper_params['epochs']}] "
               f"Loss: {avg_train_loss:.4f} | Val Loss: {avg_val_loss:.4f} | "
               f"Val Acc: {val_acc:5.2f}% {'[Best!]' if is_best else ''}")
+
+        # Early Stopping 체크
+        if no_improve_epochs >= patience:
+            print(f"\n[알림] {patience}에폭 동안 성능 향상이 없어 학습을 조기 종료합니다.")
+            break
 
     print(f"\n[학습 종료] 최고 검증 정확도: {best_val_acc:.2f}%")
     print(f"모델 가중치가 '{weight_path}' 에 저장되었습니다.")

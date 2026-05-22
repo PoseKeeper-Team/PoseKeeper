@@ -45,6 +45,8 @@ class PosePredictor:
         self._event_timers: dict[str, float] = {}
         self._calibration_pose: np.ndarray | None = None  # 캘리브레이션 기준 포즈
         self._last_result: dict | None = None
+        self._last_log_time = 0.0
+        self._last_warn_time: dict[str, float] = {}
 
     def reset(self) -> None:
         """세션 재시작 시 LSTM 버퍼·이벤트 타이머 초기화."""
@@ -76,7 +78,7 @@ class PosePredictor:
                 self._mlp_model = PoseMLP(input_dim=config.POSE_LANDMARK_DIM, num_classes=3)
                 
                 # 학습 시 딕셔너리 형태로 저장하므로, 해당 키를 찾아 로드함
-                checkpoint = torch.load(path, map_location=config.DEVICE, weights_only=False)
+                checkpoint = torch.load(path, map_location="cpu", weights_only=False)
                 if isinstance(checkpoint, dict) and "model_state_dict" in checkpoint:
                     self._mlp_model.load_state_dict(checkpoint["model_state_dict"]) # type: ignore[union-attr]
                     logger.info("MLP dictionary format loaded. Best Acc: %.2f%%", checkpoint.get("best_val_accuracy", 0))
@@ -263,8 +265,8 @@ class PosePredictor:
             if elapsed < self._event_threshold(event):
                 continue
 
-        events.append(event)
-        severity[event] = self._get_severity(event, elapsed, posture_label)
+            events.append(event)
+            severity[event] = self._get_severity(event, elapsed, posture_label)
         
         return events, severity
 
@@ -324,22 +326,28 @@ class PosePredictor:
         posture_confidence: float | None = None
         if pose_vec is not None and self._mlp_model is not None:
             try:
-                # 캘리브레이션 데이터가 있다면 현재 포즈에서 기준 포즈를 뺀 '변화량'을 사용하거나,
-                # 기준점을 맞추는 보정 로직을 넣을 수 있습니다.
                 input_vec = pose_vec
                 if self._calibration_pose is not None:
-                    # 단순 차이(Delta)를 입력으로 쓰려면 모델 재학습이 필요하므로,
-                    # 여기서는 '기준점(어깨 중심) 이동 보정' 정도를 적용할 수 있습니다.
-                    pass 
+                    # 기준 자세(정상)와의 차이를 보정하여 입력값 조정
+                    # 99차원 벡터를 (33, 3)으로 변형하여 어깨 등 주요 포인트 중심 이동 보정
+                    curr_pose = pose_vec.reshape(-1, 3)
+                    base_pose = self._calibration_pose.reshape(-1, 3)
+                    
+                    # 전체적인 좌표 이동 보정 (기준 자세와의 평균 오프셋 계산)
+                    offset = np.mean(base_pose - curr_pose, axis=0)
+                    input_vec = (curr_pose + offset).flatten()
 
-                x = torch.tensor(input_vec, dtype=torch.float32).unsqueeze(0).to(config.DEVICE)
+                device = next(self._mlp_model.parameters()).device
+                x = torch.tensor(input_vec, dtype=torch.float32).unsqueeze(0).to(device)
                 with torch.no_grad():
                     logits = self._mlp_model(x)  # type: ignore[operator]
                 probs = torch.softmax(logits, dim=1)[0]
                 posture_class = int(probs.argmax().item())
                 posture_confidence = float(probs[posture_class].item())
             except Exception as e:
-                logger.warning("MLP inference failed: %s", e)
+                if time.time() - self._last_warn_time.get("mlp_inf", 0) > 5.0:
+                    logger.warning("MLP inference failed: %s", e)
+                    self._last_warn_time["mlp_inf"] = time.time()
 
         # 모델에 정의된 LABELS 참조
         posture_label = None
@@ -355,7 +363,8 @@ class PosePredictor:
             if self._lstm_model is not None and len(self._lstm_buffer) >= config.LSTM_SEQUENCE_LENGTH:
                 try:
                     seq = np.stack(list(self._lstm_buffer), axis=0)       # (seq_len, feat)
-                    x = torch.tensor(seq, dtype=torch.float32).unsqueeze(0).to(config.DEVICE)  # (1, seq, feat)
+                    device = next(self._lstm_model.parameters()).device
+                    x = torch.tensor(seq, dtype=torch.float32).unsqueeze(0).to(device)  # (1, seq, feat)
                     with torch.no_grad():
                         logits = self._lstm_model(x)  # type: ignore[operator]
                     probs = torch.softmax(logits, dim=1)[0]
@@ -372,7 +381,8 @@ class PosePredictor:
         if pose_vec is not None and self._ae_model is not None and self._ae_threshold is not None:
             try:
                 normalized = normalize_landmarks(pose_vec)
-                x = torch.tensor(normalized, dtype=torch.float32).unsqueeze(0).to(config.DEVICE)
+                device = next(self._ae_model.parameters()).device
+                x = torch.tensor(normalized, dtype=torch.float32).unsqueeze(0).to(device)
                 with torch.no_grad():
                     anomaly_score = float(
                         self._ae_model.reconstruction_error(x).item()  # type: ignore[union-attr]
@@ -407,10 +417,19 @@ class PosePredictor:
             result["overlay_frame"] = draw_landmarks(frame.copy(), pose_results, face_lm=face_lm)
 
         self._last_result = result
-        logger.debug(
-            "process [%s] posture=%s focus=%s anomaly=%s score=%.1f events=%s",
-            mode, posture_label, focus_label, is_anomaly, pose_score, events,
-        )
+        
+        now = time.time()
+        if now - self._last_log_time >= 1.0:
+            logger.info(
+                "[%s] 자세: %-15s | 집중도: %-10s | 이상여부: %-5s | 점수: %5.1f | 이벤트: %s",
+                mode.upper(), 
+                (posture_label or "N/A").upper(), 
+                (focus_label or "N/A").upper(), 
+                "YES" if is_anomaly else "NO", 
+                pose_score, 
+                events if events else "None"
+            )
+            self._last_log_time = now
         return result
 
 
