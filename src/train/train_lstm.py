@@ -241,7 +241,7 @@ def train_lstm(
     config.PATHS["weights"].mkdir(parents=True, exist_ok=True)
     save_path = config.WEIGHT_FILES["lstm"]
 
-    best_val_acc = 0.0
+    best_val_acc = -1.0
 
     print()
     print("[LSTM 학습 시작]")
