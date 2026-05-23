@@ -7,6 +7,8 @@ from __future__ import annotations
 import logging
 import sqlite3
 import time
+import platform
+import subprocess
 
 import config
 from src.utils.db import insert_event
@@ -43,9 +45,15 @@ class AlertManager:
 
     def _fire(self, event: str, severity: str, result: dict) -> None:
         title, message = _ALERT_MESSAGES[event]
+
         try:
-            from plyer import notification
-            notification.notify(title=title, message=message, timeout=5)
+            if platform.system() == "Darwin":
+                # macOS에서는 plyer의 pyobjus 의존성 문제를 피하기 위해 osascript(AppleScript) 사용
+                script = f'display notification "{message}" with title "{title}"'
+                subprocess.run(["osascript", "-e", script], check=False)
+            else:
+                from plyer import notification
+                notification.notify(title=title, message=message, timeout=5)
         except Exception:
             logger.warning("알림 전송 실패: %s / %s", title, message)
 

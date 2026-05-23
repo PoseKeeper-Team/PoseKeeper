@@ -23,6 +23,8 @@ env/
 *.mov
 *.mkv
 data/*
+!data/raw/
+data/raw/*
 data/*.db
 data/*.db-journal
 data/*.db-wal
@@ -44,3 +46,5 @@ CLAUDE.md
 
 myenv
 AGENTS.md
+
+!data/raw/data.csv

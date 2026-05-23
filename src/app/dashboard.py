@@ -24,6 +24,7 @@ logger = logging.getLogger(__name__)
 
 _STATUS_COLORS: dict[str, str] = {
     "turtle_neck":     "#e67e22",
+    "severe_turtle_neck": "#e74c3c",
     "drowsy":          "#e74c3c",
     "distracted":      "#f39c12",
     "anomaly_posture": "#9b59b6",
@@ -118,11 +119,31 @@ class Dashboard:
             padx=8, pady=4,
         )
 
-        self._status_label = tk.Label(
-            left, text="정상", bg=_STATUS_COLORS["normal"], fg="white",
-            font=("Arial", 12, "bold"), padx=8, pady=4,
+        self._calibrate_btn = tk.Button(
+            left,
+            text="기준 자세 설정 (Calibrate)",
+            command=self._on_calibrate,
+            bg="#3498db", fg="white",
+            font=("Arial", 10, "bold"),
+            padx=8, pady=4,
         )
-        self._status_label.pack(fill=tk.X, pady=(6, 2))
+        self._calibrate_btn.pack(fill=tk.X, pady=(4, 2))
+
+        status_frame = tk.Frame(left, bg=_BG_DARK)
+        status_frame.pack(fill=tk.X, pady=(6, 2))
+
+        badge_font = ("Arial", 10, "bold")
+        self._badge_posture = tk.Label(status_frame, text="거북목: —", bg=_STATUS_COLORS["normal"],
+                                       fg="white", font=badge_font, padx=5, pady=3)
+        self._badge_posture.pack(side=tk.LEFT, expand=True, fill=tk.X, padx=(0, 2))
+
+        self._badge_anomaly = tk.Label(status_frame, text="이상 자세: —", bg=_STATUS_COLORS["normal"],
+                                       fg="white", font=badge_font, padx=5, pady=3)
+        self._badge_anomaly.pack(side=tk.LEFT, expand=True, fill=tk.X, padx=2)
+
+        self._badge_focus = tk.Label(status_frame, text="집중도: —", bg=_STATUS_COLORS["normal"],
+                                     fg="white", font=badge_font, padx=5, pady=3)
+        self._badge_focus.pack(side=tk.LEFT, expand=True, fill=tk.X, padx=(2, 0))
 
         score_frame = tk.Frame(left, bg=_BG_DARK)
         score_frame.pack(fill=tk.X, pady=2)
@@ -154,8 +175,18 @@ class Dashboard:
 
     def _build_graph(self, parent: tk.Frame) -> None:
         try:
+            import matplotlib
+            import platform
             from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
             from matplotlib.figure import Figure
+
+            # 한글 폰트 설정 (OS별 시스템 폰트 활용)
+            sys_name = platform.system()
+            if sys_name == "Darwin":
+                matplotlib.rc('font', family='AppleGothic')
+            elif sys_name == "Windows":
+                matplotlib.rc('font', family='Malgun Gothic')
+            matplotlib.rcParams['axes.unicode_minus'] = False
 
             fig = Figure(figsize=(4, 2.5), facecolor=_BG_MID)
             ax = fig.add_subplot(111)
@@ -188,6 +219,10 @@ class Dashboard:
         self._state.camera_retry = True
         logger.info("카메라 재시도 요청")
 
+    def _on_calibrate(self) -> None:
+        self._state.calibrate_request = True
+        logger.info("기준 자세 캘리브레이션 요청")
+
     def _update_frame(self) -> None:
         if not self._alive():
             return
@@ -219,23 +254,36 @@ class Dashboard:
         now = time.time()
 
         if self._state.paused:
-            events: list[str] = []
-            color = _STATUS_COLORS["paused"]
-            text = "일시정지"
-        elif result is None:
+            p_text, p_color = "일시정지", _STATUS_COLORS["paused"]
+            a_text, a_color = "일시정지", _STATUS_COLORS["paused"]
+            f_text, f_color = "일시정지", _STATUS_COLORS["paused"]
             events = []
-            color = _STATUS_COLORS["no_camera"]
-            text = "대기 중"
+        elif result is None:
+            p_text, p_color = "대기 중", _STATUS_COLORS["no_camera"]
+            a_text, a_color = "대기 중", _STATUS_COLORS["no_camera"]
+            f_text, f_color = "대기 중", _STATUS_COLORS["no_camera"]
+            events = []
         else:
-            events = result.get("events", [])
-            if events:
-                color = _STATUS_COLORS.get(events[0], "#e74c3c")
-                text = " | ".join(events)
-            else:
-                color = _STATUS_COLORS["normal"]
-                text = "정상"
+            # 1. 거북목 상태 (MLP)
+            p_lbl = result.get("posture_label") or "normal"
+            p_color = _STATUS_COLORS.get(p_lbl, _STATUS_COLORS["normal"])
+            p_text = f"거북목: {p_lbl.upper()}" if p_lbl != "normal" else "거북목: 정상"
 
-        self._status_label.configure(bg=color, text=text)
+            # 2. 이상 자세 상태 (AE)
+            is_a = result.get("is_anomaly", False)
+            a_color = _STATUS_COLORS["anomaly_posture"] if is_a else _STATUS_COLORS["normal"]
+            a_text = "이상 자세: 감지" if is_a else "이상 자세: 정상"
+
+            # 3. 집중도 상태 (LSTM)
+            f_lbl = result.get("focus_label") or "focused"
+            f_color = _STATUS_COLORS.get(f_lbl, _STATUS_COLORS["normal"])
+            f_text = f_lbl.upper()
+
+            events = result.get("events", [])
+
+        self._badge_posture.configure(text=p_text, bg=p_color)
+        self._badge_anomaly.configure(text=a_text, bg=a_color)
+        self._badge_focus.configure(text=f_text, bg=f_color)
 
         score = result.get("pose_score") if result else None
         if score is not None:

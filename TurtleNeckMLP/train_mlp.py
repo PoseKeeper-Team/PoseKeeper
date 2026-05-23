@@ -3,10 +3,35 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import DataLoader, TensorDataset
+from torch.utils.data import DataLoader, Dataset
 from TurtleNeckMLP.mlp_model import TurtleNeckMLP
 
-def train_model(data_path="data/processed/mlp", weight_path="weights/mlp.pth"):
+class AugmentedPoseDataset(Dataset):
+    """데이터 증강을 포함한 포즈 데이터셋"""
+    def __init__(self, x_data, y_data, augment=False):
+        self.x = x_data
+        self.y = y_data
+        self.augment = augment
+
+    def __len__(self):
+        return len(self.x)
+
+    def __getitem__(self, idx):
+        x = self.x[idx].copy()
+        y = self.y[idx]
+
+        if self.augment:
+            # 1. 가우시안 노이즈 추가 (MediaPipe의 미세한 떨림 모사)
+            noise = np.random.normal(0, 0.005, x.shape).astype(np.float32)
+            x += noise
+            
+            # 2. 미세한 전체 스케일 변화 (사용자와 카메라 거리 변화 모사)
+            scale = np.random.uniform(0.98, 1.02)
+            x *= scale
+
+        return torch.from_numpy(x), torch.tensor(y, dtype=torch.long)
+
+def train_model(data_path="data/processed", weight_path="weights/mlp.pth"):
     # 데이터 로드
     try:
         X = np.load(os.path.join(data_path, "X.npy")).astype(np.float32)
@@ -23,11 +48,20 @@ def train_model(data_path="data/processed/mlp", weight_path="weights/mlp.pth"):
     train_x, val_x = X[indices[:split]], X[indices[split:]]
     train_y, val_y = y[indices[:split]], y[indices[split:]]
 
-    hyper_params = {'batch_size': 32, 'lr': 0.001, 'epochs': 50}
+    # 하이퍼파라미터 조정
+    hyper_params = {
+        'batch_size': 64,      # 배치 사이즈를 키워 학습 안정성 확보
+        'lr': 0.001, 
+        'epochs': 100,         # 더 충분히 학습하도록 증가
+        'weight_decay': 1e-4   # 과적합 방지를 위한 가중치 감쇠
+    }
+    
+    patience = 15              # 성능 향상이 없는 경우 기다릴 에폭 수
+    no_improve_epochs = 0
 
-    # 1. 데이터셋 준비 (Numpy -> Tensor)
-    train_dataset = TensorDataset(torch.FloatTensor(train_x), torch.LongTensor(train_y))
-    val_dataset = TensorDataset(torch.FloatTensor(val_x), torch.LongTensor(val_y))
+    # 1. 데이터셋 준비 (학습셋에만 증강 적용)
+    train_dataset = AugmentedPoseDataset(train_x, train_y, augment=True)
+    val_dataset = AugmentedPoseDataset(val_x, val_y, augment=False)
 
     train_loader = DataLoader(train_dataset, batch_size=hyper_params['batch_size'], shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=hyper_params['batch_size'], shuffle=False)
@@ -36,7 +70,10 @@ def train_model(data_path="data/processed/mlp", weight_path="weights/mlp.pth"):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = TurtleNeckMLP(input_dim=99, num_classes=3).to(device)
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=hyper_params['lr'])
+    optimizer = optim.Adam(model.parameters(), lr=hyper_params['lr'], weight_decay=hyper_params['weight_decay'])
+    
+    # 학습률 스케줄러: 검증 정확도가 7번 동안 안 오르면 학습률을 절반으로 감소
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', factor=0.5, patience=7)
 
     best_val_acc = 0.0
     print(f"\n[학습 시작] Device: {device} | Epochs: {hyper_params['epochs']}")
@@ -76,9 +113,13 @@ def train_model(data_path="data/processed/mlp", weight_path="weights/mlp.pth"):
         avg_val_loss = val_loss / len(val_loader)
         val_acc = 100 * correct / total
         
+        # 에폭 끝날 때마다 스케줄러에게 현재 상태 보고
+        scheduler.step(val_acc)
+
         # 최고 성능 갱신 시 모델 저장
         is_best = val_acc > best_val_acc
         if is_best:
+            no_improve_epochs = 0
             best_val_acc = val_acc
             save_data = {
                 "model_state_dict": model.state_dict(),
@@ -90,10 +131,17 @@ def train_model(data_path="data/processed/mlp", weight_path="weights/mlp.pth"):
                 "config": hyper_params
             }
             torch.save(save_data, weight_path)
+        else:
+            no_improve_epochs += 1
         
         print(f"Epoch [{epoch+1:2d}/{hyper_params['epochs']}] "
               f"Loss: {avg_train_loss:.4f} | Val Loss: {avg_val_loss:.4f} | "
               f"Val Acc: {val_acc:5.2f}% {'[Best!]' if is_best else ''}")
+
+        # Early Stopping 체크
+        if no_improve_epochs >= patience:
+            print(f"\n[알림] {patience}에폭 동안 성능 향상이 없어 학습을 조기 종료합니다.")
+            break
 
     print(f"\n[학습 종료] 최고 검증 정확도: {best_val_acc:.2f}%")
     print(f"모델 가중치가 '{weight_path}' 에 저장되었습니다.")
