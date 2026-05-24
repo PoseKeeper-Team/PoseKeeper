@@ -46,15 +46,16 @@
 ## 5. 상세 처리 흐름
 
 1. 프레임을 입력받는다.
-2. `should_process(mode)` 결과가 `False`면 마지막 추론 결과를 반환한다.
-3. Pose landmark를 추출한다.
-4. FaceMesh landmark와 EAR/MAR/HeadPose를 추출한다.
-5. `build_lstm_feature()`로 `1409`차원 얼굴 피처를 결합한다.
-6. MLP가 거북목 클래스를 예측한다.
-7. LSTM sequence buffer가 충분히 쌓이면 집중도 클래스를 예측한다.
-8. Autoencoder가 재구성 오차를 계산하고 threshold와 비교한다.
-9. 각 모델 결과를 통합해 `pose_score`와 `events`를 계산한다.
-10. 결과를 알림/DB/대시보드 호출부에 반환한다.
+2. 앱 시작 후 `config.STARTUP_WARMUP_SECONDS` 동안은 프레임 read만 유지하고 추론, 알림, DB 점수 저장은 수행하지 않는다.
+3. `should_process(mode)` 결과가 `False`면 마지막 추론 결과를 반환한다.
+4. Pose landmark를 추출한다.
+5. FaceMesh landmark와 EAR/MAR/HeadPose를 추출한다.
+6. `build_lstm_feature()`로 `1409`차원 얼굴 피처를 결합한다.
+7. MLP가 거북목 클래스를 예측한다.
+8. LSTM sequence buffer가 충분히 쌓이면 집중도 클래스를 예측한다.
+9. Autoencoder가 재구성 오차를 계산하고 threshold와 비교한다.
+10. 각 모델 결과를 통합해 `pose_score`와 `events`를 계산한다.
+11. 결과를 알림/DB/대시보드 호출부에 반환한다.
 
 ## 6. 모델 로딩 정책
 

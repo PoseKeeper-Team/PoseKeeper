@@ -37,6 +37,7 @@ def _fallback_result() -> dict:
     return {
         "timestamp": time.time(),
         "is_skip": False,
+        "is_warmup": False,
         "posture_class": None,
         "posture_label": None,
         "posture_confidence": None,
@@ -49,6 +50,14 @@ def _fallback_result() -> dict:
         "events": [],
         "event_severity": {},
     }
+
+
+def _warmup_result(remaining_sec: float) -> dict:
+    result = _fallback_result()
+    result["is_warmup"] = True
+    result["warmup_remaining_sec"] = max(0.0, remaining_sec)
+    result["pose_score"] = None
+    return result
 
 
 # ---------------------------------------------------------------------------
@@ -100,6 +109,9 @@ def inference_loop(
     last_flush = time.time()
     consecutive_fail = 0
     _FAIL_THRESHOLD = 30  # ~3초 (0.1s sleep × 30)
+    warmup_started_at = time.monotonic()
+    warmup_logged_done = False
+    logger.info("시작 워밍업 시작: %.1f초", config.STARTUP_WARMUP_SECONDS)
 
     while state.running:
         if state.camera_retry:
@@ -134,6 +146,17 @@ def inference_loop(
 
         consecutive_fail = 0
         frame_count += 1
+
+        warmup_remaining = config.STARTUP_WARMUP_SECONDS - (
+            time.monotonic() - warmup_started_at
+        )
+        if warmup_remaining > 0:
+            state.update_frame(frame, _warmup_result(warmup_remaining))
+            continue
+        if not warmup_logged_done:
+            logger.info("시작 워밍업 종료 — 추론 활성화")
+            warmup_logged_done = True
+
         if not should_process(state.mode, frame_count):
             continue
 

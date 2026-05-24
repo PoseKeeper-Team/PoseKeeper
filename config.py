@@ -36,6 +36,10 @@ DASHBOARD_FACEMESH_REFINE: bool = True
 TRAIN_CAPTURE_RESOLUTION: tuple[int, int] = (640, 480)
 
 
+# --- Startup warmup ----------------------------------------------------
+STARTUP_WARMUP_SECONDS: float = 3.0
+
+
 # --- Alerts -----------------------------------------------------------
 ALERT_SENSITIVITY: str = "medium"           # "low" | "medium" | "high"
 TURTLE_NECK_THRESHOLD_SEC: float = 5.0

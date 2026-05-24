@@ -42,6 +42,7 @@
 | `BG_CAPTURE_RESOLUTION` | 백그라운드 웹캠 해상도 |
 | `DASHBOARD_FRAME_SKIP` | 대시보드 모드 추론 간격 |
 | `DASHBOARD_CAPTURE_RESOLUTION` | 대시보드 웹캠 해상도 |
+| `STARTUP_WARMUP_SECONDS` | 앱 시작 후 추론/알림/DB 점수 저장을 지연할 시간 |
 | `ALERT_SENSITIVITY` | 알림 민감도 |
 | `ALERT_COOLDOWN_SEC` | 동일 알림 최소 간격 |
 | `EAR_THRESHOLD` | 눈 감김 기준 EAR 임계값 |
