@@ -47,12 +47,16 @@ class PosePredictor:
         self._last_result: dict | None = None
         self._last_log_time = 0.0
         self._last_warn_time: dict[str, float] = {}
+        
+        self._no_face_count = 0
+        self._no_face_threshold = 6  # 얼굴이 6프레임 연속 안 잡히면 산만함 후보
 
     def reset(self) -> None:
         """세션 재시작 시 LSTM 버퍼·이벤트 타이머 초기화."""
         self._lstm_buffer.clear()
         self._event_timers.clear()
         self._last_result = None
+        self._no_face_count = 0
         logger.info("PosePredictor reset")
 
     def calibrate(self, frame: np.ndarray) -> bool:
@@ -312,14 +316,26 @@ class PosePredictor:
 
         # ── Face ──────────────────────────────────────────────────────
         face_lm = process_face(frame, mode)
+        no_face_distracted = False
+
         if face_lm is not None:
+            self._no_face_count = 0
+
             ear: float | None = compute_ear(face_lm)
             mar: float | None = compute_mar(face_lm)
             yaw, pitch, roll = estimate_head_pose(face_lm, frame_size)
             lstm_vec = build_lstm_feature(face_lm, frame_size)
         else:
+            self._no_face_count += 1
+
+            # 얼굴이 사라진 상태에서는 이전 LSTM 시퀀스를 계속 쓰면 오판 가능성이 있으므로 비운다.
+            self._lstm_buffer.clear()
+
             ear = mar = yaw = pitch = roll = None
             lstm_vec = None
+
+            if self._no_face_count >= self._no_face_threshold:
+                no_face_distracted = True
 
         # ── MLP (거북목) ───────────────────────────────────────────────
         posture_class: int | None = None
@@ -358,7 +374,13 @@ class PosePredictor:
         # ── LSTM (집중도) ──────────────────────────────────────────────
         focus_class: int | None = None
         focus_confidence: float | None = None
-        if lstm_vec is not None:
+
+        # 얼굴이 일정 프레임 이상 감지되지 않으면 LSTM 대신 산만함으로 처리
+        if no_face_distracted:
+            focus_class = 2
+            focus_confidence = 1.0
+
+        elif lstm_vec is not None:
             self._lstm_buffer.append(lstm_vec)
             if self._lstm_model is not None and len(self._lstm_buffer) >= config.LSTM_SEQUENCE_LENGTH:
                 try:
