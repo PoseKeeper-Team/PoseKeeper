@@ -242,6 +242,7 @@ def train_lstm(
     save_path = config.WEIGHT_FILES["lstm"]
 
     best_val_acc = -1.0
+    best_confusion = None
 
     print()
     print("[LSTM 학습 시작]")
@@ -284,6 +285,7 @@ def train_lstm(
 
         if val_acc > best_val_acc:
             best_val_acc = val_acc
+            best_confusion = confusion.copy()
 
             # 중요:
             # predictor.py는 PoseLSTM을 만든 뒤 load_state_dict()로 바로 불러온다.
@@ -291,9 +293,14 @@ def train_lstm(
             torch.save(model.state_dict(), save_path)
 
             print(f"[SAVE] best model saved: {save_path}")
+            print("best confusion matrix [true rows x pred cols]")
+            print(best_confusion)
 
     print()
     print(f"[LSTM 학습 완료] best_val_acc={best_val_acc:.3f}")
+    if best_confusion is not None:
+        print("best confusion matrix [true rows x pred cols]")
+        print(best_confusion)
     print(f"[저장 파일] {save_path}")
 
 
