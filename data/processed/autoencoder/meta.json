@@ -1,0 +1,122 @@
+{
+  "source": "local_mp4",
+  "target_fps": 6,
+  "feature_dim": 99,
+  "num_samples": 4696,
+  "train_samples": 4227,
+  "val_samples": 469,
+  "videos": [
+    {
+      "path": "C:\\Users\\User\\Desktop\\DeepLearning\\PoseKeeper\\data\\raw\\posture\\0_normal\\normal_001.mp4",
+      "label": 0,
+      "total_frames": 1934,
+      "sampled_frames": 387,
+      "valid_frames": 387,
+      "skipped_no_pose": 0
+    },
+    {
+      "path": "C:\\Users\\User\\Desktop\\DeepLearning\\PoseKeeper\\data\\raw\\posture\\0_normal\\normal_001.mp4",
+      "label": 0,
+      "total_frames": 1934,
+      "sampled_frames": 387,
+      "valid_frames": 387,
+      "skipped_no_pose": 0
+    },
+    {
+      "path": "C:\\Users\\User\\Desktop\\DeepLearning\\PoseKeeper\\data\\raw\\posture\\0_normal\\normal_002.mp4",
+      "label": 0,
+      "total_frames": 1837,
+      "sampled_frames": 368,
+      "valid_frames": 368,
+      "skipped_no_pose": 0
+    },
+    {
+      "path": "C:\\Users\\User\\Desktop\\DeepLearning\\PoseKeeper\\data\\raw\\posture\\0_normal\\normal_002.mp4",
+      "label": 0,
+      "total_frames": 1837,
+      "sampled_frames": 368,
+      "valid_frames": 368,
+      "skipped_no_pose": 0
+    },
+    {
+      "path": "C:\\Users\\User\\Desktop\\DeepLearning\\PoseKeeper\\data\\raw\\posture\\0_normal\\normal_003.mp4",
+      "label": 0,
+      "total_frames": 938,
+      "sampled_frames": 188,
+      "valid_frames": 188,
+      "skipped_no_pose": 0
+    },
+    {
+      "path": "C:\\Users\\User\\Desktop\\DeepLearning\\PoseKeeper\\data\\raw\\posture\\0_normal\\normal_003.mp4",
+      "label": 0,
+      "total_frames": 938,
+      "sampled_frames": 188,
+      "valid_frames": 188,
+      "skipped_no_pose": 0
+    },
+    {
+      "path": "C:\\Users\\User\\Desktop\\DeepLearning\\PoseKeeper\\data\\raw\\posture\\0_normal\\normal_004.mp4",
+      "label": 0,
+      "total_frames": 2184,
+      "sampled_frames": 437,
+      "valid_frames": 437,
+      "skipped_no_pose": 0
+    },
+    {
+      "path": "C:\\Users\\User\\Desktop\\DeepLearning\\PoseKeeper\\data\\raw\\posture\\0_normal\\normal_004.mp4",
+      "label": 0,
+      "total_frames": 2184,
+      "sampled_frames": 437,
+      "valid_frames": 437,
+      "skipped_no_pose": 0
+    },
+    {
+      "path": "C:\\Users\\User\\Desktop\\DeepLearning\\PoseKeeper\\data\\raw\\posture\\0_normal\\normal_005.mp4",
+      "label": 0,
+      "total_frames": 2040,
+      "sampled_frames": 408,
+      "valid_frames": 408,
+      "skipped_no_pose": 0
+    },
+    {
+      "path": "C:\\Users\\User\\Desktop\\DeepLearning\\PoseKeeper\\data\\raw\\posture\\0_normal\\normal_005.mp4",
+      "label": 0,
+      "total_frames": 2040,
+      "sampled_frames": 408,
+      "valid_frames": 408,
+      "skipped_no_pose": 0
+    },
+    {
+      "path": "C:\\Users\\User\\Desktop\\DeepLearning\\PoseKeeper\\data\\raw\\posture\\0_normal\\normal_006.mp4",
+      "label": 0,
+      "total_frames": 885,
+      "sampled_frames": 177,
+      "valid_frames": 177,
+      "skipped_no_pose": 0
+    },
+    {
+      "path": "C:\\Users\\User\\Desktop\\DeepLearning\\PoseKeeper\\data\\raw\\posture\\0_normal\\normal_006.mp4",
+      "label": 0,
+      "total_frames": 885,
+      "sampled_frames": 177,
+      "valid_frames": 177,
+      "skipped_no_pose": 0
+    },
+    {
+      "path": "C:\\Users\\User\\Desktop\\DeepLearning\\PoseKeeper\\data\\raw\\posture\\0_normal\\normal_007.mp4",
+      "label": 0,
+      "total_frames": 1911,
+      "sampled_frames": 383,
+      "valid_frames": 383,
+      "skipped_no_pose": 0
+    },
+    {
+      "path": "C:\\Users\\User\\Desktop\\DeepLearning\\PoseKeeper\\data\\raw\\posture\\0_normal\\normal_007.mp4",
+      "label": 0,
+      "total_frames": 1911,
+      "sampled_frames": 383,
+      "valid_frames": 383,
+      "skipped_no_pose": 0
+    }
+  ]
+}
