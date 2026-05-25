@@ -1,46 +1,180 @@
 # PoseKeeper
 
-웹캠 기반 자세 모니터링과 집중도 분석을 위한 팀 프로젝트다. 이 저장소의 `docs/`는 현재 구현 상태 설명이 아니라, 팀원이 기능을 나눠 구현할 때 인터페이스와 데이터 계약이 엇갈리지 않도록 맞추는 협업용 명세다.
+PoseKeeper는 웹캠으로 사용자의 자세와 집중 상태를 모니터링하는 데스크톱 앱입니다.
+앱을 실행하면 백그라운드에서 카메라 프레임을 분석하고, 거북목이나 졸음 같은 상태가 일정 시간 이상 지속될 때 알림을 보냅니다. 사용자는 시스템 트레이 아이콘에서 대시보드를 열어 현재 상태, 점수 변화, 세션 기록을 확인할 수 있습니다.
 
-## 저장소 구조
+## 주요 기능
+
+- 웹캠 기반 실시간 자세 모니터링
+- 거북목, 졸음, 딴짓 상태 감지
+- 위험 상태 지속 시 OS 알림 표시
+- 시스템 트레이 백그라운드 실행
+- Tkinter 대시보드에서 현재 영상과 상태 확인
+- SQLite에 세션, 경고 이벤트, 점수 기록 저장
+- MLP, LSTM, Autoencoder 기반 모델 구조
+
+## 동작 흐름
+
+```text
+앱 실행
+  -> 시스템 트레이에서 백그라운드 실행
+  -> 웹캠 프레임 수집
+  -> MediaPipe로 Pose / FaceMesh 특징 추출
+  -> 모델 추론으로 자세와 집중 상태 판단
+  -> 위험 상태가 지속되면 알림 표시
+  -> SQLite DB에 세션, 이벤트, 점수 저장
+  -> 트레이 메뉴에서 대시보드 확인
+```
+
+백그라운드 모드는 리소스 사용을 줄이기 위해 낮은 해상도와 프레임 스킵을 사용합니다. 대시보드를 열었을 때는 사용자가 상태를 확인하기 쉽도록 더 높은 해상도의 화면 표시를 사용합니다.
+
+## 프로젝트 구조
 
 ```text
 PoseKeeper/
-  config.py
-  main.py
-  test_env.py
-  docs/
-  notebooks/
-  requirements/
+  config.py                 # 경로, threshold, 모델 입력 차원 등 공통 설정
+  main.py                   # 앱 실행 진입점
+  test_env.py               # 설치 환경 점검 스크립트
+  data/
+    raw/                    # 원본 영상/이미지 데이터
+    processed/              # 전처리된 학습 데이터
+    posture.db              # 앱 실행 중 생성되는 SQLite DB
+  docs/                     # 기능별 명세서와 구현 계획
+  requirements/             # 환경별 의존성 목록
   src/
-    app/
-    data/
-    inference/
-    models/
-    train/
-    utils/
+    app/                    # 트레이, 대시보드, 알림
+    data/                   # 데이터 수집, 전처리, Dataset
+    inference/              # 실시간 추론 통합
+    models/                 # MLP, LSTM, Autoencoder 모델
+    train/                  # 모델 학습 스크립트
+    utils/                  # MediaPipe, DB, 장치 감지 유틸
+  weights/                  # 학습된 모델 파일
 ```
 
-## 기능 구성
+## 설치
 
-- `src/utils/mediapipe_utils.py`: Pose / FaceMesh 추출, EAR, MAR, HeadPose, LSTM feature 조립
-- `src/data/*`: 데이터 수집, 전처리, Dataset 정의
-- `src/models/*`: MLP, LSTM, Autoencoder 정의
-- `src/train/*`: 각 모델 학습 스크립트
-- `src/inference/predictor.py`: 실시간 추론 통합
-- `src/app/*`: tray, dashboard, alert
-- `src/utils/db.py`: SQLite 저장
+Python 3.10 이상 환경을 권장합니다.
 
-## 공통 계약
+가상환경을 만든 뒤 프로젝트 루트에서 실행합니다.
 
-- 설정값의 source of truth는 `config.py`다.
-- Pose 입력 차원은 `config.POSE_LANDMARK_DIM == 99`다.
-- LSTM 입력 차원은 `config.LSTM_FEATURE_DIM == 1409`다.
-- LSTM feature 순서는 `face_xyz_flatten -> ear -> mar -> yaw -> pitch -> roll`로 고정한다.
-- raw 데이터의 canonical 구조는 영문 폴더명 기준이다.
-- 백그라운드와 대시보드는 단일 웹캠 캡처 루프를 공유한다.
+```powershell
+python -m venv .venv
+.\.venv\Scripts\activate
+python setup.py
+```
+
+`setup.py`는 현재 환경을 감지해 `requirements/` 아래의 적절한 파일을 설치하고, 설치 후 `test_env.py`를 실행합니다.
+
+환경을 직접 지정할 수도 있습니다.
+
+```powershell
+python setup.py --env cpu
+python setup.py --env cuda
+python setup.py --env mac
+python setup.py --env colab
+```
+
+설치만 확인하고 싶을 때:
+
+```powershell
+python setup.py --no-install
+python test_env.py
+```
+
+## 실행
+
+```powershell
+python main.py
+```
+
+실행 후 Windows에서는 시스템 트레이 영역에 PoseKeeper 아이콘이 표시됩니다. 트레이 메뉴에서 대시보드를 열거나 앱을 종료할 수 있습니다.
+
+macOS에서는 메뉴바 아이콘을 확인하면 됩니다.
+
+## 데이터베이스 확인
+
+앱 실행 중 생성되는 기록은 SQLite 파일에 저장됩니다.
+
+```text
+data/posture.db
+```
+
+저장되는 주요 테이블은 다음과 같습니다.
+
+| 테이블            | 설명                                    |
+| ----------------- | --------------------------------------- |
+| `sessions`      | 앱 실행 세션 시작/종료 시간과 평균 점수 |
+| `events`        | 알림이 발생한 이벤트 기록               |
+| `score_samples` | 시간별 자세/집중 점수 샘플              |
+
+PowerShell에서 간단히 확인하려면:
+
+```powershell
+@'
+import sqlite3
+from pathlib import Path
+
+p = Path("data/posture.db")
+conn = sqlite3.connect(p)
+
+print("exists:", p.exists())
+print("size:", p.stat().st_size)
+print("tables:", [r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type=?", ("table",))])
+
+for table in ["sessions", "events", "score_samples"]:
+    count = conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
+    print(f"{table}:", count)
+
+conn.close()
+'@ | python -
+```
+
+GUI로 보고 싶다면 DB Browser for SQLite 또는 VS Code의 SQLite Viewer 확장으로 `data/posture.db`를 열면 됩니다.
+
+## 데이터와 학습 흐름
+
+PoseKeeper의 학습 데이터 흐름은 다음과 같습니다.
+
+```text
+data/raw/
+  -> preprocess
+  -> data/processed/
+  -> Dataset
+  -> DataLoader
+  -> train
+  -> weights/
+  -> inference
+```
+
+모델별 역할은 다음과 같습니다.
+
+| 모델        | 대상                                | 입력                                            |
+| ----------- | ----------------------------------- | ----------------------------------------------- |
+| MLP         | 거북목 자세 분류                    | Pose landmark 99차원                            |
+| LSTM        | 졸음/딴짓 등 집중 상태 분류         | FaceMesh + EAR + MAR + HeadPose 1409차원 시퀀스 |
+| Autoencoder | 정상 자세에서 벗어난 이상 자세 탐지 | 정상 자세 Pose landmark                         |
+
+전처리 실행 예시:
+
+```powershell
+python -m src.data.preprocess_mlp
+python -m src.data.preprocess_lstm
+python -m src.data.preprocess_ae
+```
+
+학습 실행 예시:
+
+```powershell
+python -m src.train.train_mlp
+python -m src.train.train_lstm
+python -m src.train.train_ae
+```
+
+학습된 모델 파일은 `weights/` 아래에 저장하고, 실시간 추론에서 사용합니다.
 
 ## raw 데이터 구조
+
+새 데이터는 아래 구조를 기준으로 추가합니다.
 
 ```text
 data/
@@ -59,156 +193,43 @@ data/
     autoencoder/
 ```
 
-기존 한글 폴더 데이터가 있더라도 새 데이터는 위 영문 구조로만 추가한다. 한글 폴더 호환은 필요하면 `preprocess.py`에서만 일시적으로 처리한다.
+Google Drive는 원본 영상 공유용으로만 사용합니다. 전처리와 학습 코드는 로컬 `data/raw/` 경로를 기준으로 실행합니다.
 
-Google Drive는 원본 영상 공유용으로만 사용한다. 각자 필요한 영상을 로컬로 다운로드한 뒤 `data/raw/drowsiness/{label}/` 아래에 배치하고, 전처리/학습 코드는 로컬 `data/raw/` 경로만 기준으로 실행한다. 예: `data/raw/drowsiness/1_drowsy/drowsy_20260513_001.mp4`
+## 설정
 
-## 실행 기준
+공통 설정은 `config.py`에서 관리합니다.
 
-- 환경 검증: `python test_env.py`
-- 앱 진입점: `python main.py`
-- 학습: `python -m src.train.train_mlp`, `python -m src.train.train_lstm`, `python -m src.train.train_ae`
+주요 설정:
 
-## 개발 환경
+- `PATHS`: weight, raw, processed, DB 경로
+- `WEIGHT_FILES`: 모델 파일 경로
+- `BG_FRAME_SKIP`: 백그라운드 추론 간격
+- `STARTUP_WARMUP_SECONDS`: 앱 시작 직후 추론/알림/DB 저장 지연 시간
+- `ALERT_*`: 알림 threshold와 cooldown
+- `POSE_LANDMARK_DIM`: MLP / Autoencoder 입력 차원
+- `LSTM_FEATURE_DIM`: LSTM 입력 차원
 
-- 학습: Windows CUDA 또는 Google Colab
-- 테스트/발표: Windows CPU 또는 macOS CPU/MPS
-- 장치 선택 우선순위: CUDA -> MPS -> CPU
+모델 입력 shape와 경로는 `config.py`를 기준으로 맞춥니다.
 
-## 협업 규칙
+## 문서
 
-- 기능 계약 변경 시 먼저 `docs/`와 `config.py`를 같이 갱신한다.
-- README보다 상세한 구현 범위와 입출력 계약은 `docs/`를 기준으로 본다.
-- 데이터와 weight 파일은 GitHub에 커밋하지 않고 별도 저장소로 공유한다.
+상세 구현 범위와 인터페이스 계약은 `docs/` 아래 기능별 명세서를 기준으로 합니다.
 
-## 모델별 전처리/Dataset 사용
+| 문서                                            | 내용                         |
+| ----------------------------------------------- | ---------------------------- |
+| `docs/01_mediapipe_feature_spec.md`           | MediaPipe 특징 추출          |
+| `docs/02_data_feature_spec.md`                | 데이터 수집/전처리/Dataset   |
+| `docs/03_model_training_feature_spec.md`      | 모델 학습                    |
+| `docs/04_realtime_inference_feature_spec.md`  | 실시간 추론                  |
+| `docs/05_tray_dashboard_feature_spec.md`      | 트레이 앱/대시보드           |
+| `docs/06_alert_db_feature_spec.md`            | 알림/DB 저장                 |
+| `docs/07_config_environment_feature_spec.md`  | 설정/환경 검증               |
+| `docs/08_dataloader_training_feature_spec.md` | DataLoader와 학습 파이프라인 |
 
-### MLP 담당자
+기능을 수정할 때는 README보다 `docs/`의 명세와 `config.py`를 먼저 확인합니다.
 
-```powershell
-python -m src.data.preprocess_mlp
-```
+## 개발 메모
 
-```python
-from torch.utils.data import DataLoader
-from src.data.dataset_mlp import PostureDataset
-
-dataset = PostureDataset()
-loader = DataLoader(dataset, batch_size=64, shuffle=True)
-features, labels = next(iter(loader))
-```
-
-저장/로드 경로: `data/processed/mlp/X.npy`, `data/processed/mlp/y.npy`
-
-### LSTM 담당자
-
-```powershell
-python -m src.data.preprocess_lstm
-```
-
-```python
-from torch.utils.data import DataLoader
-from src.data.dataset_lstm import FocusSequenceDataset
-
-dataset = FocusSequenceDataset()
-loader = DataLoader(dataset, batch_size=32, shuffle=True)
-sequences, labels = next(iter(loader))
-```
-
-저장/로드 경로: `data/processed/lstm/X.npy`, `data/processed/lstm/y.npy`
-
-### Autoencoder 담당자
-
-```powershell
-python -m src.data.preprocess_ae
-```
-
-```python
-from torch.utils.data import DataLoader
-from src.data.dataset_ae import AutoencoderDataset
-
-train_dataset = AutoencoderDataset(split="train")
-val_dataset = AutoencoderDataset(split="val")
-train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
-val_loader = DataLoader(val_dataset, batch_size=64, shuffle=False)
-features, targets = next(iter(train_loader))
-```
-
-저장/로드 경로: `data/processed/autoencoder/X_train.npy`, `data/processed/autoencoder/X_val.npy`
-
-공통 방식:
-
-```python
-from src.data.dataset import create_dataset
-
-dataset = create_dataset("mlp")
-dataset = create_dataset("lstm")
-dataset = create_dataset("ae", split="train")
-```
-
-
-data/raw/
-    원본 영상 또는 이미지
-          ↓
-  preprocess
-    MediaPipe로 landmark/feature 추출
-    라벨 매핑
-    shape 검증
-          ↓
-  data/processed/
-    X.npy, y.npy 또는 X_train.npy, X_val.npy
-          ↓
-  Dataset
-    processed 파일을 PyTorch Dataset 형태로 감쌈
-          ↓
-  DataLoader
-    batch 단위로 모델에 공급
-          ↓
-  train
-    MLP / LSTM / Autoencoder 학습
-          ↓
-  weights/
-    실시간 추론에서 쓸 .pth 저장
-
-  핵심은 dataset이 학습 자체는 아니고, 전처리된 데이터를 학습 코드가 읽기 쉽게 포장하는 단계입니다.
-
-  모델별로는:
-
-  MLP 거북목
-  data/raw/posture/*.mp4
-  → preprocess_mlp
-  → data/processed/mlp/X.npy     # (N, 99)
-  → data/processed/mlp/y.npy     # (N,)
-  → PostureDataset
-  → train_mlp
-  → weights/mlp.pth
-
-  LSTM 졸음/딴짓
-  data/raw/drowsiness/*.mp4
-  → preprocess_lstm
-  → FaceMesh + EAR + MAR + HeadPose
-  → data/processed/lstm/X.npy    # (N, seq_len, 1409)
-  → data/processed/lstm/y.npy    # (N,)
-  → FocusSequenceDataset
-  → train_lstm
-  → weights/lstm.pth
-
-  Autoencoder 이상 자세
-  data/raw/posture/0_normal/*.mp4
-  → preprocess_ae
-  → 정상 자세 Pose landmark만 추출
-  → data/processed/autoencoder/X_train.npy
-  → data/processed/autoencoder/X_val.npy
-  → AutoencoderDataset
-  → train_ae
-  → weights/autoencoder.pth + threshold
-
-  현재 코드 상태 기준으로는 src/data/preprocess.py가 mlp/lstm/ae/all 전처리 진입점이고, src/data/dataset.py가 모델별 Dataset factory입니다.
-
-  다만 주의할 점이 하나 있습니다. src/train/train_mlp.py와 src/train/train_lstm.py는 아직 실질 구현이 비어 있습니다. src/train/train_ae.py는
-  구현이 있지만 명세의 data/processed/autoencoder/X_train.npy 흐름과 완전히 맞지는 않고, 기본값이 data/raw/normal_poses.npy 쪽을 보고 있어서
-  정리가 필요합니다.
-
-  즉, 설계상 답은:
-
-  raw → preprocess → processed → dataset → dataloader → train → weights → inference
+- 웹캠, 모델 파일, DB 파일이 없는 상황에서도 가능한 한 명확한 로그를 남기도록 구현합니다.
+- 백그라운드 실행 최적화가 중요하므로 프레임 스킵, 낮은 해상도, `torch.no_grad()` 사용을 유지합니다.
+- 로깅은 필수이며, 앱 진입점에서는 `src` 로거를 DEBUG 수준으로 설정합니다.
