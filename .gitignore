@@ -22,13 +22,10 @@ env/
 *.avi
 *.mov
 *.mkv
-data/*
+
 !data/raw/
 data/raw/*
-data/*.db
-data/*.db-journal
-data/*.db-wal
-data/*.db-shm
+
 
 
 # Notebook checkpoints
